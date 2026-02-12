@@ -528,6 +528,10 @@
             border-radius: 8px;
             color: #c00;
         }
+
+        .warmup-section-divider {
+            margin: 25px 0 15px 0;
+        }
     </style>
 </head>
 <body>
@@ -744,31 +748,36 @@
         function renderWarmup() {
             const section = document.getElementById('warmupSection');
             
-            if (workoutData.warmup.length === 0) {
-                section.innerHTML = '<div class="section-title">No warmup for this day - let\'s get started!</div>';
-                return;
-            }
-            
-            const warmupHTML = workoutData.warmup.map((item, index) => `
-                <div class="warmup-item">
-                    <div class="name">
-                        <span class="name-text">${item.name}</span>
-                        ${item.videoUrl ? `<button class="video-toggle" id="btn-warmup-${index}" onclick="toggleVideo('warmup-${index}')">▶️ Video</button>` : ''}
-                    </div>
-                    <div class="details">${item.details}</div>
-                    ${item.videoUrl ? `
-                        <div class="video-container" id="video-warmup-${index}">
-                            <div class="video-error">Watch form video:</div>
-                            <a href="${item.videoUrl}" target="_blank" class="video-link">🎥 Watch on YouTube</a>
+            // Render both upper and lower warmups
+            const renderWarmupSection = (items, title) => {
+                if (items.length === 0) return '';
+                
+                const itemsHTML = items.map((item, index) => `
+                    <div class="warmup-item">
+                        <div class="name">
+                            <span class="name-text">${item.name}</span>
+                            ${item.videoUrl ? `<button class="video-toggle" id="btn-${title}-${index}" onclick="toggleVideo('${title}-${index}')">▶️ Video</button>` : ''}
                         </div>
-                    ` : ''}
-                </div>
-            `).join('');
+                        <div class="details">${item.details}</div>
+                        ${item.videoUrl ? `
+                            <div class="video-container" id="video-${title}-${index}">
+                                <div class="video-error">Watch form video:</div>
+                                <a href="${item.videoUrl}" target="_blank" class="video-link">🎥 Watch on YouTube</a>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+                
+                return `
+                    <div class="section-title warmup-section-divider">🔥 ${title}</div>
+                    ${itemsHTML}
+                `;
+            };
             
-            section.innerHTML = `
-                <div class="section-title">🔥 Warm Up - ${workoutData.type}</div>
-                ${warmupHTML}
-            `;
+            const upperHTML = renderWarmupSection(workoutData.warmup.upper, 'Upper Warmup');
+            const lowerHTML = renderWarmupSection(workoutData.warmup.lower, 'Lower Warmup');
+            
+            section.innerHTML = upperHTML + lowerHTML;
         }
 
         function nextStep() {
@@ -952,7 +961,7 @@
             const reps = document.getElementById('repsInput')?.value || '';
             const rpe = document.getElementById('rpeInput')?.value || '';
             
-            if (!workoutLog[exerciseIndex]) {
+            if (!workoutLog[currentExerciseIndex]) {
                 workoutLog[currentExerciseIndex] = [];
             }
             
