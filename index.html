@@ -47,6 +47,40 @@
             opacity: 0.9;
         }
 
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
         .confirmation-modal {
             position: fixed;
             top: 0;
@@ -223,13 +257,6 @@
             }
         }
 
-        .video-container iframe {
-            width: 100%;
-            height: 200px;
-            border: none;
-            border-radius: 8px;
-        }
-
         .video-error {
             color: #666;
             font-size: 13px;
@@ -288,20 +315,6 @@
             color: #666;
             margin-top: 10px;
             font-style: italic;
-        }
-
-        .exercise-video-container {
-            margin: 15px 0;
-        }
-
-        .exercise-video-container.show {
-            animation: slideDown 0.3s ease;
-        }
-
-        .exercise-video-container iframe {
-            width: 100%;
-            height: 220px;
-            border-radius: 8px;
         }
 
         .last-workout {
@@ -506,12 +519,27 @@
         .dot.filled {
             background: #10b981;
         }
+
+        .error-message {
+            background: #fee;
+            border-left: 4px solid #f00;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+            color: #c00;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading workout...</div>
+        </div>
+
         <!-- Confirmation Modal -->
-        <div id="confirmationModal" class="confirmation-modal">
+        <div id="confirmationModal" class="confirmation-modal hidden">
             <div class="modal-content">
                 <h2>Confirm Workout</h2>
                 <p>You're starting <strong id="confirmText">Week 1, Day 1</strong>. Is this correct?</p>
@@ -552,100 +580,110 @@
     </div>
 
     <script>
-        // Complete workout data for all 4 days
-        const allWorkouts = {
-            1: {
-                week: 1,
-                day: 1,
-                type: "Upper",
-                warmup: [
-                    { name: "Side Lying Rib Decompression", details: "8 breaths each side • Focus on expanding ribcage 360, melt over foam roller with each exhale", videoUrl: "https://www.youtube.com/watch?v=2A1CO9idH84" },
-                    { name: "Roll Subclavius/Pec Minor", details: "30-60s • 1 set", videoUrl: "https://www.youtube.com/watch?v=PfcPxhrhono" },
-                    { name: "Roll Subscapularis", details: "30-60s • 1 set", videoUrl: "https://www.youtube.com/watch?v=Cmsx4Hp-wEg" },
-                    { name: "Foam Roller T Spine Extension", details: "1 set • 10 reps", videoUrl: "https://www.youtube.com/watch?v=CljkdQSVz_I" },
-                    { name: "Wrist Mobility Series", details: "10 each • 1 set", videoUrl: "https://www.youtube.com/watch?v=-tGQHR-Lki4" }
-                ],
-                exercises: [
-                    { name: "Heels Elevated Goblet Squat", videoUrl: "https://www.youtube.com/watch?v=dXd6scGpEuo", sets: 3, maxSets: 4, reps: "10-12", rir: "2 RIR", notes: "Full foot pressure, ribs stack over hips" },
-                    { name: "Single Leg Press", videoUrl: "https://www.youtube.com/watch?v=BsOg0iBKs6A", sets: 3, maxSets: 4, reps: "8-12", rir: "2 RIR", notes: "Big toe, knee, sternum in line" },
-                    { name: "Deadlift", videoUrl: "https://www.youtube.com/watch?v=3oMjoOm5O18", sets: 3, maxSets: 4, reps: "4-6", rir: "2-3 RIR", notes: "Bar over shoelaces, big inhale to brace, ribs down, reach arms long to the floor from start to finish" },
-                    { name: "Machine Chest Supported Row", videoUrl: "https://www.youtube.com/watch?v=T3u9h0QgaHw", sets: 3, maxSets: 4, reps: "8-12", rir: "2 RIR", notes: "Maximum movement through shoulder blades" },
-                    { name: "Machine Assisted Dips", videoUrl: "https://www.youtube.com/watch?v=yZ83t4mrPrI", sets: 3, maxSets: 4, reps: "8-12", rir: "2 RIR", notes: "Slight lean forward, don't let shoulders roll forward at the bottom" },
-                    { name: "Single Arm Machine High Curl", videoUrl: "https://www.youtube.com/watch?v=7Iqb4aqRMsU", sets: 3, maxSets: 4, reps: "10-12", rir: "1-2 RIR", notes: "Slight turn away from working side, pinkies to biceps" }
-                ]
-            },
-            2: {
-                week: 1,
-                day: 2,
-                type: "Upper",
-                warmup: [
-                    { name: "Side Lying Rib Decompression", details: "8 breaths each side • Focus on expanding ribcage 360, melt over foam roller with each exhale", videoUrl: "https://www.youtube.com/watch?v=2A1CO9idH84" },
-                    { name: "Roll Subclavius/Pec Minor", details: "30-60s • 1 set", videoUrl: "https://www.youtube.com/watch?v=PfcPxhrhono" },
-                    { name: "Roll Subscapularis", details: "30-60s • 1 set", videoUrl: "https://www.youtube.com/watch?v=Cmsx4Hp-wEg" },
-                    { name: "Foam Roller T Spine Extension", details: "1 set • 10 reps", videoUrl: "https://www.youtube.com/watch?v=CljkdQSVz_I" },
-                    { name: "Wrist Mobility Series", details: "10 each • 1 set", videoUrl: "https://www.youtube.com/watch?v=-tGQHR-Lki4" }
-                ],
-                exercises: [
-                    { name: "Cable High to Low Row", videoUrl: "https://www.youtube.com/watch?v=uLA8pM1PPQQ", sets: 3, maxSets: 4, reps: "10-12", rir: "2 RIR", notes: "Shoulders ribs and hips stay stacked, gaze up to keep sternum up, elbow drives to hip NOT behind the body" },
-                    { name: "Band Assisted Neutral Grip Pull Up", videoUrl: "https://www.youtube.com/watch?v=j2IAABQnges", sets: 3, maxSets: 4, reps: "6-10", rir: "3,2,1 RIR", notes: "Gaze slightly up to keep sternum up" },
-                    { name: "Machine Chest Press", videoUrl: "https://www.youtube.com/watch?v=NwzUje3z0qY", sets: 3, maxSets: 4, reps: "8-12", rir: "2-3 RIR", notes: "Don't let the plates touch the bottom at the back, big squeeze of the chest as you press, keep a slight bend at the elbows at the top" },
-                    { name: "Machine Hip Thrust", videoUrl: "https://www.youtube.com/watch?v=ZSPmIyX9RZs", sets: 3, maxSets: 4, reps: "8-12", rir: "2 RIR", notes: "Ribs stay stacked with hips as you hinge, knees stack over ankle at the top, full foot pressure from start to finish" },
-                    { name: "Leg Extension", videoUrl: "https://www.youtube.com/watch?v=m0FOpMEgero", sets: 3, maxSets: 4, reps: "10-12", rir: "2 RIR", notes: "Legs together toes turned straight" },
-                    { name: "Machine Preacher Curl", videoUrl: "https://www.youtube.com/watch?v=Ja6ZlIDONac", sets: 3, maxSets: 4, reps: "10-12", rir: "1-2 RIR", notes: "Slight bend at the elbow at the bottom, pinkies to biceps at the top" }
-                ]
-            },
-            3: {
-                week: 1,
-                day: 3,
-                type: "Lower",
-                warmup: [
-                    { name: "Roll Foot", details: "30-60s • 1 set", videoUrl: "https://www.youtube.com/watch?v=3w8Oy0DNwcw" },
-                    { name: "Roll Glutes", details: "30-60s • 1 set", videoUrl: "https://youtube.com/shorts/0ZY3TbECB00?si=pGm0uLBa54r3wgoS" },
-                    { name: "Side Lying Pelvic Decompression", details: "8 breaths each side • Try to relax, melt over foam roller with each exhale", videoUrl: "https://www.youtube.com/watch?v=GvvghEqTm-U" },
-                    { name: "Side Lying Rib Decompression", details: "8 breaths each side • Focus on expanding ribcage 360, melt over foam roller with each exhale", videoUrl: "https://www.youtube.com/watch?v=2A1CO9idH84" },
-                    { name: "Hooklying Bridge", details: "10 breaths • Focus here is bracing - ribs down to stack with pelvis, full foot pressure", videoUrl: "https://www.youtube.com/watch?v=-CYtzRvaj6o" }
-                ],
-                exercises: [
-                    { name: "Box Step Up", videoUrl: "https://www.youtube.com/watch?v=_EvP9cmx8BQ", sets: 3, maxSets: 4, reps: "8-12", rir: "2 RIR", notes: "Big toe, knee, sternum in line" },
-                    { name: "Lying Leg Curl", videoUrl: "https://www.youtube.com/watch?v=n5WDXD_mpVY", sets: 3, maxSets: 4, reps: "10-12", rir: "2 RIR", notes: "Legs together toes turned slightly in" },
-                    { name: "SSB Squat", videoUrl: "https://www.youtube.com/watch?v=93s3lbCvFj4", sets: 3, maxSets: 4, reps: "4-6", rir: "2-3 RIR", notes: "Stance just outside of the hips, make sure you're filling up 360 and pushing out into obliques as you brace, ribs down to stack with the hips" },
-                    { name: "Machine Pec Fly", videoUrl: "https://www.youtube.com/watch?v=FDay9wFe5uE", sets: 3, maxSets: 4, reps: "8-12", rir: "2 RIR", notes: "Elbows back not down" },
-                    { name: "Chest Supported DB Row", videoUrl: "https://www.youtube.com/watch?v=OmlKl6oeeMk", sets: 3, maxSets: 4, reps: "8-12", rir: "2 RIR", notes: "Focus on full range of motion through shoulder blades" },
-                    { name: "Cable Single Arm Pushdown", videoUrl: "https://www.youtube.com/watch?v=MGzkobt-omw", sets: 3, maxSets: 4, reps: "10-12", rir: "1-2 RIR", notes: "" }
-                ]
-            },
-            4: {
-                week: 1,
-                day: 4,
-                type: "Core & Cardio",
-                warmup: [], // No warmup for Day 4
-                exercises: [
-                    { name: "TVA Ball Crunch", videoUrl: "https://www.youtube.com/watch?v=-EICXnCpavg", sets: 3, maxSets: 4, reps: "15-30", rir: "0-1 RIR", notes: "" },
-                    { name: "Cable Side Bend", videoUrl: "https://www.youtube.com/watch?v=hOI4insq3U0", sets: 3, maxSets: 4, reps: "10-15", rir: "0-1 RIR", notes: "" },
-                    { name: "Bench Reverse Crunch", videoUrl: "https://www.youtube.com/watch?v=dL3XhWLzCak", sets: 3, maxSets: 4, reps: "10-15", rir: "0-1 RIR", notes: "" },
-                    { name: "Stairmaster", videoUrl: "", sets: 1, maxSets: 1, reps: "20 min", rir: "", notes: "5 mins @ level 6, 5 mins @ level 7, 5 mins @ level 8, 5 mins @ level 7" }
-                ]
-            }
-        };
+        // API Configuration
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyGGtim3OuUTD1d2HsKgo_kEsye-bdv1QaATGwoOwfEci6KKUu81wtX5Qre5vNcQBk/exec';
 
-        // Current workout - defaulting to Day 1, will be determined by app logic
+        // State
         let currentDay = 1;
-        let workoutData = allWorkouts[currentDay];
+        let currentWeek = 1;
+        let workoutData = null;
         let currentStep = 0;
         let currentExerciseIndex = 0;
         let currentSetIndex = 0;
         let workoutLog = [];
         let openVideoId = null;
 
-        function initializeApp() {
-            // In a real app, this would detect which day based on last workout
-            // For now, defaulting to Day 1
-            currentDay = 1;
-            workoutData = allWorkouts[currentDay];
+        // API Functions
+        async function fetchWorkoutData(day) {
+            try {
+                const response = await fetch(`${API_URL}?action=getWorkout&day=${day}`);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching workout:', error);
+                showError('Failed to load workout data. Please check your connection.');
+                return null;
+            }
+        }
+
+        async function fetchCurrentWeek() {
+            try {
+                const response = await fetch(`${API_URL}?action=getCurrentWeek`);
+                const data = await response.json();
+                return data.week || 1;
+            } catch (error) {
+                console.error('Error fetching week:', error);
+                return 1;
+            }
+        }
+
+        async function fetchLastWorkout(day, exerciseName) {
+            try {
+                const response = await fetch(`${API_URL}?action=getLastWorkout&day=${day}&exercise=${encodeURIComponent(exerciseName)}`);
+                const data = await response.json();
+                return data.sets || [];
+            } catch (error) {
+                console.error('Error fetching last workout:', error);
+                return [];
+            }
+        }
+
+        async function saveWorkout(exerciseName, setNumber, weight, reps, rpe) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveWorkout',
+                        week: currentWeek,
+                        day: currentDay,
+                        exerciseName: exerciseName,
+                        setNumber: setNumber,
+                        weight: weight,
+                        reps: reps,
+                        rpe: rpe
+                    })
+                });
+                const data = await response.json();
+                return data.success;
+            } catch (error) {
+                console.error('Error saving workout:', error);
+                return false;
+            }
+        }
+
+        function showError(message) {
+            const container = document.querySelector('.container');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            container.insertBefore(errorDiv, container.firstChild);
+        }
+
+        async function initializeApp() {
+            // Fetch current week
+            currentWeek = await fetchCurrentWeek();
             
-            // Update confirmation modal
-            document.getElementById('confirmText').textContent = `Week ${workoutData.week}, Day ${workoutData.day}`;
-            document.getElementById('headerInfo').textContent = `Week ${workoutData.week} • Day ${workoutData.day} • ${workoutData.type}`;
+            // For now, default to Day 1 - later we'll make this smart
+            currentDay = 1;
+            
+            // Fetch workout data
+            workoutData = await fetchWorkoutData(currentDay);
+            
+            if (!workoutData) {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                return;
+            }
+
+            // Update UI
+            document.getElementById('confirmText').textContent = `Week ${currentWeek}, Day ${currentDay}`;
+            document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
+            
+            // Hide loading, show confirmation
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('confirmationModal').classList.remove('hidden');
         }
 
         function confirmWorkout() {
@@ -659,10 +697,23 @@
             const newDay = prompt("Enter day number (1-4):", currentDay);
             if (newDay && newDay >= 1 && newDay <= 4) {
                 currentDay = parseInt(newDay);
-                workoutData = allWorkouts[currentDay];
-                document.getElementById('confirmText').textContent = `Week ${workoutData.week}, Day ${workoutData.day}`;
-                document.getElementById('headerInfo').textContent = `Week ${workoutData.week} • Day ${workoutData.day} • ${workoutData.type}`;
+                // Reload workout data
+                showLoading();
+                fetchWorkoutData(currentDay).then(data => {
+                    workoutData = data;
+                    document.getElementById('confirmText').textContent = `Week ${currentWeek}, Day ${currentDay}`;
+                    document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
+                    hideLoading();
+                });
             }
+        }
+
+        function showLoading() {
+            document.getElementById('loadingScreen').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingScreen').classList.add('hidden');
         }
 
         function toggleVideo(id) {
@@ -707,8 +758,8 @@
                     <div class="details">${item.details}</div>
                     ${item.videoUrl ? `
                         <div class="video-container" id="video-warmup-${index}">
-                            <div class="video-error">Can't embed? Watch on YouTube instead:</div>
-                            <a href="${item.videoUrl}" target="_blank" class="video-link">🎥 Watch Video on YouTube</a>
+                            <div class="video-error">Watch form video:</div>
+                            <a href="${item.videoUrl}" target="_blank" class="video-link">🎥 Watch on YouTube</a>
                         </div>
                     ` : ''}
                 </div>
@@ -779,7 +830,7 @@
             updateButtons();
         }
 
-        function renderExercise(exerciseIndex, setIndex) {
+        async function renderExercise(exerciseIndex, setIndex) {
             const exercise = workoutData.exercises[exerciseIndex];
             const section = document.getElementById('exerciseSection');
             
@@ -788,9 +839,16 @@
                 workoutLog[exerciseIndex] = Array(exercise.maxSets).fill(null).map(() => ({ weight: '', reps: '', rpe: '' }));
             }
 
-            const lastWorkoutHTML = Array(exercise.sets).fill(0).map((_, i) => `
-                <div class="previous-set">Set ${i + 1}: No previous data</div>
-            `).join('');
+            // Fetch last workout data
+            const lastWorkoutData = await fetchLastWorkout(currentDay, exercise.name);
+            
+            const lastWorkoutHTML = lastWorkoutData.length > 0 
+                ? lastWorkoutData.map((set, i) => `
+                    <div class="previous-set">Set ${i + 1}: ${set.weight}lbs × ${set.reps} reps @ RPE ${set.rpe}</div>
+                  `).join('')
+                : Array(exercise.sets).fill(0).map((_, i) => `
+                    <div class="previous-set">Set ${i + 1}: No previous data</div>
+                  `).join('');
 
             // Create dots for set navigation
             const dotsHTML = Array.from({length: exercise.maxSets}, (_, i) => {
@@ -894,7 +952,7 @@
             const reps = document.getElementById('repsInput')?.value || '';
             const rpe = document.getElementById('rpeInput')?.value || '';
             
-            if (!workoutLog[currentExerciseIndex]) {
+            if (!workoutLog[exerciseIndex]) {
                 workoutLog[currentExerciseIndex] = [];
             }
             
@@ -925,12 +983,29 @@
             }
         }
 
-        function completeWorkout() {
+        async function completeWorkout() {
             saveCurrentSet();
-            console.log('Workout completed!', workoutLog);
+            
+            showLoading();
+            
+            // Save all workout data to Google Sheets
+            let savePromises = [];
+            workoutData.exercises.forEach((exercise, exerciseIdx) => {
+                workoutLog[exerciseIdx].forEach((set, setIdx) => {
+                    if (set.weight || set.reps || set.rpe) {
+                        savePromises.push(
+                            saveWorkout(exercise.name, setIdx + 1, set.weight, set.reps, set.rpe)
+                        );
+                    }
+                });
+            });
+            
+            await Promise.all(savePromises);
+            
+            hideLoading();
             
             // Format the output nicely
-            let summary = `Day ${workoutData.day} - ${workoutData.type} Complete! 🎉\n\n`;
+            let summary = `Day ${currentDay} - ${workoutData.type} Complete! 🎉\n\n`;
             workoutData.exercises.forEach((exercise, i) => {
                 summary += `${exercise.name}:\n`;
                 workoutLog[i].forEach((set, j) => {
@@ -945,8 +1020,10 @@
                 summary += '\n';
             });
             
-            alert(summary + '\n(In the real app, this would sync to Google Sheets)');
-            // Here we would send data to Google Sheets
+            alert(summary + '\nWorkout saved to Google Sheets! 💪');
+            
+            // Reset for next workout
+            location.reload();
         }
 
         // Initialize app on load
