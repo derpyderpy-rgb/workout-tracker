@@ -634,29 +634,25 @@
 
         async function saveWorkout(exerciseName, setNumber, weight, reps, rpe) {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'saveWorkout',
-                        week: currentWeek,
-                        day: currentDay,
-                        exerciseName: exerciseName,
-                        setNumber: setNumber,
-                        weight: weight,
-                        reps: reps,
-                        rpe: rpe
-                    })
+                const params = new URLSearchParams({
+                    action: 'saveWorkout',
+                    week: currentWeek,
+                    day: currentDay,
+                    exerciseName: exerciseName,
+                    setNumber: setNumber,
+                    weight: weight,
+                    reps: reps,
+                    rpe: rpe
                 });
+        
+                const response = await fetch(`${API_URL}?${params.toString()}`);
                 const data = await response.json();
                 return data.success;
             } catch (error) {
-                console.error('Error saving workout:', error);
-                return false;
-            }
-        }
+            console.error('Error saving workout:', error);
+            return false;
+    }
+}
 
         function showError(message) {
             const container = document.querySelector('.container');
