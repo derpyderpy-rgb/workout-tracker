@@ -776,41 +776,48 @@
             section.innerHTML = upperHTML + lowerHTML;
         }
 
-        function nextStep() {
-            if (currentStep === 0) {
-                // Moving from warmup to first exercise
-                document.getElementById('warmupSection').classList.add('hidden');
-                document.getElementById('exerciseSection').classList.remove('hidden');
-                currentExerciseIndex = 0;
-                currentSetIndex = 0;
-                renderExercise(currentExerciseIndex, currentSetIndex);
-                currentStep = 1;
-            } else {
-                // Save current set data
-                saveCurrentSet();
-                
-                const exercise = workoutData.exercises[currentExerciseIndex];
-                
-                // Check if we need to move to next set or next exercise
-                if (currentSetIndex < exercise.maxSets - 1) {
-                    // Move to next set
-                    currentSetIndex++;
-                    renderExercise(currentExerciseIndex, currentSetIndex);
-                } else if (currentExerciseIndex < workoutData.exercises.length - 1) {
-                    // Move to next exercise
-                    currentExerciseIndex++;
-                    currentSetIndex = 0;
-                    renderExercise(currentExerciseIndex, currentSetIndex);
-                } else {
-                    // Workout complete
-                    completeWorkout();
-                    return;
-                }
-                currentStep++;
-            }
-            updateProgress();
-            updateButtons();
+     async function nextStep() {
+    if (currentStep === 0) {
+        // Moving from warmup to first exercise
+        document.getElementById('warmupSection').classList.add('hidden');
+        document.getElementById('exerciseSection').classList.remove('hidden');
+        currentExerciseIndex = 0;
+        currentSetIndex = 0;
+        await renderExercise(currentExerciseIndex, currentSetIndex);
+        currentStep = 1;
+    } else {
+        // Save current set data to Google Sheets immediately
+        showLoading();
+        const success = await saveCurrentSetToSheet();
+        hideLoading();
+        
+        if (!success) {
+            alert('⚠️ Failed to save set data. Please check your connection and try again.');
+            return;
         }
+        
+        const exercise = workoutData.exercises[currentExerciseIndex];
+        
+        // Check if we need to move to next set or next exercise
+        if (currentSetIndex < exercise.maxSets - 1) {
+            // Move to next set
+            currentSetIndex++;
+            await renderExercise(currentExerciseIndex, currentSetIndex);
+        } else if (currentExerciseIndex < workoutData.exercises.length - 1) {
+            // Move to next exercise
+            currentExerciseIndex++;
+            currentSetIndex = 0;
+            await renderExercise(currentExerciseIndex, currentSetIndex);
+        } else {
+            // Workout complete
+            completeWorkout();
+            return;
+        }
+        currentStep++;
+    }
+    updateProgress();
+    updateButtons();
+}
 
         function previousStep() {
             if (currentStep === 1 && currentSetIndex === 0) {
@@ -935,22 +942,22 @@
             `;
         }
 
-        function nextSet() {
-            saveCurrentSet();
-            const exercise = workoutData.exercises[currentExerciseIndex];
-            if (currentSetIndex < exercise.maxSets - 1) {
-                currentSetIndex++;
-                renderExercise(currentExerciseIndex, currentSetIndex);
-            }
-        }
-
-        function previousSet() {
-            saveCurrentSet();
-            if (currentSetIndex > 0) {
-                currentSetIndex--;
-                renderExercise(currentExerciseIndex, currentSetIndex);
-            }
-        }
+    async function nextSet() {
+    showLoading();
+    const success = await saveCurrentSetToSheet();
+    hideLoading();
+    
+    if (!success) {
+        alert('⚠️ Failed to save set data. Please check your connection and try again.');
+        return;
+    }
+    
+    const exercise = workoutData.exercises[currentExerciseIndex];
+    if (currentSetIndex < exercise.maxSets - 1) {
+        currentSetIndex++;
+        await renderExercise(currentExerciseIndex, currentSetIndex);
+    }
+}
 
         function saveCurrentSet() {
             const weight = document.getElementById('weightInput')?.value || '';
@@ -963,7 +970,30 @@
             
             workoutLog[currentExerciseIndex][currentSetIndex] = { weight, reps, rpe };
         }
+async function saveCurrentSetToSheet() {
+    // First save to local memory
+    saveCurrentSet();
+    
+    // Then save to Google Sheets
+    const currentData = workoutLog[currentExerciseIndex][currentSetIndex];
+    const exercise = workoutData.exercises[currentExerciseIndex];
+    
+    // Only save if there's actual data
+    if (currentData.weight || currentData.reps || currentData.rpe) {
+        const success = await saveWorkout(
+            exercise.name,
+            currentSetIndex + 1,
+            currentData.weight,
+            currentData.reps,
+            currentData.rpe
+        );
+        return success;
+    }
+    
+    return true; // If no data, consider it successful
+}
 
+        
         function updateProgress() {
             const totalSteps = workoutData.exercises.reduce((sum, ex) => sum + ex.maxSets, 0) + 1; // +1 for warmup
             const progress = (currentStep / totalSteps) * 100;
@@ -989,47 +1019,32 @@
         }
 
         async function completeWorkout() {
-            saveCurrentSet();
-            
-            showLoading();
-            
-            // Save all workout data to Google Sheets
-            let savePromises = [];
-            workoutData.exercises.forEach((exercise, exerciseIdx) => {
-                workoutLog[exerciseIdx].forEach((set, setIdx) => {
-                    if (set.weight || set.reps || set.rpe) {
-                        savePromises.push(
-                            saveWorkout(exercise.name, setIdx + 1, set.weight, set.reps, set.rpe)
-                        );
-                    }
-                });
-            });
-            
-            await Promise.all(savePromises);
-            
-            hideLoading();
-            
-            // Format the output nicely
-            let summary = `Day ${currentDay} - ${workoutData.type} Complete! 🎉\n\n`;
-            workoutData.exercises.forEach((exercise, i) => {
-                summary += `${exercise.name}:\n`;
-                workoutLog[i].forEach((set, j) => {
-                    if (set.weight || set.reps || set.rpe) {
-                        if (exercise.name === 'Stairmaster') {
-                            summary += `  ${set.reps} minutes @ level ${set.rpe}\n`;
-                        } else {
-                            summary += `  Set ${j + 1}: ${set.weight}lbs × ${set.reps} reps @ RPE ${set.rpe}\n`;
-                        }
-                    }
-                });
-                summary += '\n';
-            });
-            
-            alert(summary + '\nWorkout saved to Google Sheets! 💪');
-            
-            // Reset for next workout
-            location.reload();
-        }
+    // Save the last set
+    showLoading();
+    await saveCurrentSetToSheet();
+    hideLoading();
+    
+    // Format the summary
+    let summary = `Day ${currentDay} - ${workoutData.type} Complete! 🎉\n\n`;
+    workoutData.exercises.forEach((exercise, i) => {
+        summary += `${exercise.name}:\n`;
+        workoutLog[i].forEach((set, j) => {
+            if (set.weight || set.reps || set.rpe) {
+                if (exercise.name === 'Stairmaster') {
+                    summary += `  ${set.reps} minutes @ level ${set.rpe}\n`;
+                } else {
+                    summary += `  Set ${j + 1}: ${set.weight}lbs × ${set.reps} reps @ RPE ${set.rpe}\n`;
+                }
+            }
+        });
+        summary += '\n';
+    });
+    
+    alert(summary + '\nAll data saved to Google Sheets! 💪');
+    
+    // Reset for next workout
+    location.reload();
+}
 
         // Initialize app on load
         initializeApp();
