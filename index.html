@@ -543,38 +543,16 @@
         </div>
 
         <!-- Confirmation Modal -->
-        <div id="confirmationModal" class="confirmation-modal">
-    <div class="modal-content">
-        <h2>Confirm Your Workout</h2>
-        <p>Is this correct?</p>
-        
-        <div class="workout-select">
-            <label>Week:</label>
-            <select id="weekSelect">
-                <option value="1">Week 1</option>
-                <option value="2">Week 2</option>
-                <option value="3">Week 3</option>
-                <option value="4">Week 4</option>
-                <option value="5">Week 5</option>
-                <option value="6">Week 6</option>
-                <option value="7">Week 7</option>
-                <option value="8">Week 8</option>
-            </select>
+        <div id="confirmationModal" class="confirmation-modal hidden">
+            <div class="modal-content">
+                <h2>Confirm Workout</h2>
+                <p>You're starting <strong id="confirmText">Week 1, Day 1</strong>. Is this correct?</p>
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" onclick="changeWorkout()">Change</button>
+                    <button class="btn btn-primary" onclick="confirmWorkout()">Correct</button>
+                </div>
+            </div>
         </div>
-        
-        <div class="workout-select">
-            <label>Day:</label>
-            <select id="daySelect">
-                <option value="1">Day 1 (Upper)</option>
-                <option value="2">Day 2 (Lower)</option>
-                <option value="3">Day 3 (Upper)</option>
-                <option value="4">Day 4 (Lower)</option>
-            </select>
-        </div>
-        
-        <button onclick="confirmWorkout()" class="btn btn-primary">Start Workout</button>
-    </div>
-</div>
 
         <!-- Header -->
         <div class="header">
@@ -607,7 +585,7 @@
 
     <script>
         // API Configuration
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwtxXz8agZO1Sp3if4Aub1CImIDl14RjpFug3vM2yzN0tckDxeuWDUAKVul7jJ9rZI/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwtxXz8agZO1Sp3if4Aub1CImIDl14RjpFug3vM2yzN0tckDxeuWDUAKVul7jJ9rZI/exec';
 
         // State
         let currentDay = 1;
@@ -685,61 +663,36 @@
         }
 
         async function initializeApp() {
-    // Just show the confirmation modal - don't load data yet
-    document.getElementById('loadingScreen').classList.add('hidden');
-    document.getElementById('confirmationModal').classList.remove('hidden');
-    
-    // Set default selections (you can change these)
-    document.getElementById('weekSelect').value = '1';
-    document.getElementById('daySelect').value = '1';
-}
+            // Fetch current week
+            currentWeek = await fetchCurrentWeek();
+            
+            // For now, default to Day 1 - later we'll make this smart
+            currentDay = 1;
+            
+            // Fetch workout data
+            workoutData = await fetchWorkoutData(currentDay);
+            
+            if (!workoutData) {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                return;
+            }
 
-       async function confirmWorkout() {
-    currentWeek = parseInt(document.getElementById('weekSelect').value);
-    currentDay = parseInt(document.getElementById('daySelect').value);
-    
-    document.getElementById('confirmationModal').classList.add('hidden');
-    
-    // Update header to show week and day
-    document.querySelector('.workout-info').textContent = `Week ${currentWeek} • Day ${currentDay}`;
-    
-    showLoading();
-    await loadWorkoutData();
-    hideLoading();
-
-    renderWarmup();  // This displays the warmup section
-    updateButtons(); // This sets up the navigation buttons
-}
-
-        async function loadWorkoutData() {
-    try {
-        const response = await fetch(`${SCRIPT_URL}?action=getWorkout&day=${currentDay}&week=${currentWeek}`);
-        const data = await response.json();
-        
-        if (data.error) {
-            alert('Error loading workout: ' + data.error);
-            return;
+            // Update UI
+            document.getElementById('confirmText').textContent = `Week ${currentWeek}, Day ${currentDay}`;
+            document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
+            
+            // Hide loading, show confirmation
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('confirmationModal').classList.remove('hidden');
         }
-        
-        workoutData = data;
-        initializeWorkoutLog();
-        renderWarmup();
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to load workout data. Please check your connection.');
-    }
-}
-function initializeWorkoutLog() {
-    workoutLog = [];
-    workoutData.exercises.forEach(exercise => {
-        const sets = [];
-        for (let i = 0; i < exercise.maxSets; i++) {
-            sets.push({ weight: '', reps: '', rpe: '' });
+
+        function confirmWorkout() {
+            document.getElementById('confirmationModal').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            renderWarmup();
+            updateProgress();
         }
-        workoutLog.push(sets);
-    });
-}
-        
+
         function changeWorkout() {
             const newDay = prompt("Enter day number (1-4):", currentDay);
             if (newDay && newDay >= 1 && newDay <= 4) {
