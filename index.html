@@ -545,11 +545,32 @@
         <!-- Confirmation Modal -->
         <div id="confirmationModal" class="confirmation-modal hidden">
             <div class="modal-content">
-                <h2>Confirm Workout</h2>
-                <p>You're starting <strong id="confirmText">Week 1, Day 1</strong>. Is this correct?</p>
+                <h2>Start Workout</h2>
+                <div id="statusMessage" style="margin-bottom:15px; color:#666; line-height:1.5;"></div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-size:13px; font-weight:600; color:#555; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Week</label>
+                    <select id="weekSelect" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; font-weight:600; background:white;">
+                        <option value="1">Week 1</option>
+                        <option value="2">Week 2</option>
+                        <option value="3">Week 3</option>
+                        <option value="4">Week 4</option>
+                        <option value="5">Week 5</option>
+                        <option value="6">Week 6</option>
+                        <option value="7">Week 7</option>
+                        <option value="8">Week 8</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display:block; font-size:13px; font-weight:600; color:#555; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Day</label>
+                    <div id="dayButtons" style="display:flex; gap:10px;">
+                        <button class="day-select-btn" onclick="selectDay(1)" data-day="1" style="flex:1; padding:12px; border:2px solid #667eea; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:white; color:#667eea;">Day 1</button>
+                        <button class="day-select-btn" onclick="selectDay(2)" data-day="2" style="flex:1; padding:12px; border:2px solid #667eea; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:white; color:#667eea;">Day 2</button>
+                        <button class="day-select-btn" onclick="selectDay(3)" data-day="3" style="flex:1; padding:12px; border:2px solid #667eea; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:white; color:#667eea;">Day 3</button>
+                        <button class="day-select-btn" onclick="selectDay(4)" data-day="4" style="flex:1; padding:12px; border:2px solid #667eea; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:white; color:#667eea;">Day 4</button>
+                    </div>
+                </div>
                 <div class="modal-buttons">
-                    <button class="btn btn-secondary" onclick="changeWorkout()">Change</button>
-                    <button class="btn btn-primary" onclick="confirmWorkout()">Correct</button>
+                    <button class="btn btn-primary" onclick="confirmWorkout()" style="width:100%;">Start Workout</button>
                 </div>
             </div>
         </div>
@@ -610,14 +631,14 @@
             }
         }
 
-        async function fetchCurrentWeek() {
+        async function fetchStatus() {
             try {
-                const response = await fetch(`${API_URL}?action=getCurrentWeek`);
+                const response = await fetch(`${API_URL}?action=getStatus`);
                 const data = await response.json();
-                return data.week || 1;
+                return data;
             } catch (error) {
-                console.error('Error fetching week:', error);
-                return 1;
+                console.error('Error fetching status:', error);
+                return { week: 1, nextDay: 1, daysCompleted: [] };
             }
         }
 
@@ -663,54 +684,110 @@
         }
 
         // ============================================================
-        // Initialization
+        // Initialization & Modal
         // ============================================================
-        async function initializeApp() {
-            // Fetch current week (auto-detected from sheet data)
-            currentWeek = await fetchCurrentWeek();
-            
-            // Default to Day 1
-            currentDay = 1;
-            
-            // Fetch workout data for this week and day
-            workoutData = await fetchWorkoutData(currentDay, currentWeek);
-            
-            if (!workoutData || workoutData.error) {
-                document.getElementById('loadingScreen').classList.add('hidden');
-                if (workoutData && workoutData.error) {
-                    showError(workoutData.error);
-                }
-                return;
-            }
+        let statusData = null;
 
-            // Update UI
-            document.getElementById('confirmText').textContent = `Week ${currentWeek}, Day ${currentDay}`;
-            document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
+        async function initializeApp() {
+            // Fetch status (auto-detected week, next day, completed days)
+            statusData = await fetchStatus();
+            
+            currentWeek = statusData.week;
+            currentDay = statusData.nextDay;
+            
+            // Set up the week selector
+            document.getElementById('weekSelect').value = currentWeek;
+            
+            // Highlight completed days and select the suggested day
+            updateDayButtons();
+            selectDay(currentDay);
+            
+            // Build status message
+            let msg = '';
+            if (statusData.previousWeekComplete) {
+                msg = `✅ Week ${statusData.previousWeek} complete! Starting Week ${statusData.week}.`;
+            } else if (statusData.daysCompleted.length > 0) {
+                msg = `Week ${statusData.week}: Days ${statusData.daysCompleted.join(', ')} done. Suggesting Day ${statusData.nextDay}.`;
+            } else {
+                msg = `Starting Week ${statusData.week}, Day ${statusData.nextDay}.`;
+            }
+            document.getElementById('statusMessage').textContent = msg;
+            
+            // Update header
+            document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay}`;
+            
+            // Listen for week changes
+            document.getElementById('weekSelect').addEventListener('change', onWeekChange);
             
             // Hide loading, show confirmation
             document.getElementById('loadingScreen').classList.add('hidden');
             document.getElementById('confirmationModal').classList.remove('hidden');
         }
 
-        function confirmWorkout() {
-            document.getElementById('confirmationModal').classList.add('hidden');
-            document.getElementById('mainContent').classList.remove('hidden');
-            renderWarmup();
-            updateProgress();
+        function selectDay(day) {
+            currentDay = day;
+            // Update button styles
+            document.querySelectorAll('.day-select-btn').forEach(btn => {
+                const btnDay = parseInt(btn.getAttribute('data-day'));
+                if (btnDay === day) {
+                    btn.style.background = '#667eea';
+                    btn.style.color = 'white';
+                } else {
+                    btn.style.background = 'white';
+                    btn.style.color = '#667eea';
+                }
+            });
         }
 
-        function changeWorkout() {
-            const newDay = prompt("Enter day number (1-4):", currentDay);
-            if (newDay && newDay >= 1 && newDay <= 4) {
-                currentDay = parseInt(newDay);
-                showLoading();
-                fetchWorkoutData(currentDay, currentWeek).then(data => {
-                    workoutData = data;
-                    document.getElementById('confirmText').textContent = `Week ${currentWeek}, Day ${currentDay}`;
-                    document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
-                    hideLoading();
-                });
+        function updateDayButtons() {
+            const completed = statusData ? statusData.daysCompleted : [];
+            document.querySelectorAll('.day-select-btn').forEach(btn => {
+                const btnDay = parseInt(btn.getAttribute('data-day'));
+                if (completed.includes(btnDay)) {
+                    btn.textContent = `Day ${btnDay} ✓`;
+                } else {
+                    btn.textContent = `Day ${btnDay}`;
+                }
+            });
+        }
+
+        async function onWeekChange() {
+            currentWeek = parseInt(document.getElementById('weekSelect').value);
+            // When manually changing week, reset day selection to 1
+            // and clear completed indicators (we don't have status for other weeks without a new fetch)
+            statusData = { week: currentWeek, nextDay: 1, daysCompleted: [] };
+            updateDayButtons();
+            selectDay(1);
+            document.getElementById('statusMessage').textContent = `Selected Week ${currentWeek}. Pick a day to begin.`;
+        }
+
+        async function confirmWorkout() {
+            showLoading();
+            
+            // Fetch the actual workout data for selected week + day
+            workoutData = await fetchWorkoutData(currentDay, currentWeek);
+            
+            if (!workoutData || workoutData.error) {
+                hideLoading();
+                if (workoutData && workoutData.error) {
+                    showError(workoutData.error);
+                }
+                return;
             }
+            
+            // Reset state for new workout
+            currentStep = 0;
+            currentExerciseIndex = 0;
+            currentSetIndex = 0;
+            workoutLog = [];
+            
+            document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
+            document.getElementById('confirmationModal').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            
+            hideLoading();
+            renderWarmup();
+            updateProgress();
         }
 
         function showLoading() {
