@@ -543,16 +543,38 @@
         </div>
 
         <!-- Confirmation Modal -->
-        <div id="confirmationModal" class="confirmation-modal hidden">
-            <div class="modal-content">
-                <h2>Confirm Workout</h2>
-                <p>You're starting <strong id="confirmText">Week 1, Day 1</strong>. Is this correct?</p>
-                <div class="modal-buttons">
-                    <button class="btn btn-secondary" onclick="changeWorkout()">Change</button>
-                    <button class="btn btn-primary" onclick="confirmWorkout()">Correct</button>
-                </div>
-            </div>
+        <div id="confirmationModal" class="confirmation-modal">
+    <div class="modal-content">
+        <h2>Confirm Your Workout</h2>
+        <p>Is this correct?</p>
+        
+        <div class="workout-select">
+            <label>Week:</label>
+            <select id="weekSelect">
+                <option value="1">Week 1</option>
+                <option value="2">Week 2</option>
+                <option value="3">Week 3</option>
+                <option value="4">Week 4</option>
+                <option value="5">Week 5</option>
+                <option value="6">Week 6</option>
+                <option value="7">Week 7</option>
+                <option value="8">Week 8</option>
+            </select>
         </div>
+        
+        <div class="workout-select">
+            <label>Day:</label>
+            <select id="daySelect">
+                <option value="1">Day 1 (Upper)</option>
+                <option value="2">Day 2 (Lower)</option>
+                <option value="3">Day 3 (Upper)</option>
+                <option value="4">Day 4 (Lower)</option>
+            </select>
+        </div>
+        
+        <button onclick="confirmWorkout()" class="btn btn-primary">Start Workout</button>
+    </div>
+</div>
 
         <!-- Header -->
         <div class="header">
@@ -686,12 +708,39 @@
             document.getElementById('confirmationModal').classList.remove('hidden');
         }
 
-        function confirmWorkout() {
-            document.getElementById('confirmationModal').classList.add('hidden');
-            document.getElementById('mainContent').classList.remove('hidden');
-            renderWarmup();
-            updateProgress();
+       async function confirmWorkout() {
+    currentWeek = parseInt(document.getElementById('weekSelect').value);
+    currentDay = parseInt(document.getElementById('daySelect').value);
+    
+    document.getElementById('confirmationModal').classList.add('hidden');
+    
+    // Update header to show week and day
+    document.querySelector('.workout-info').textContent = `Week ${currentWeek} • Day ${currentDay}`;
+    
+    showLoading();
+    await loadWorkoutData();
+    hideLoading();
+}
         }
+
+        async function loadWorkoutData() {
+    try {
+        const response = await fetch(`${SCRIPT_URL}?action=getWorkout&day=${currentDay}&week=${currentWeek}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            alert('Error loading workout: ' + data.error);
+            return;
+        }
+        
+        workoutData = data;
+        initializeWorkoutLog();
+        renderWarmup();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to load workout data. Please check your connection.');
+    }
+}
 
         function changeWorkout() {
             const newDay = prompt("Enter day number (1-4):", currentDay);
