@@ -532,6 +532,49 @@
         .warmup-section-divider {
             margin: 25px 0 15px 0;
         }
+
+        .previous-note {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff8e1;
+            border-left: 3px solid #f59e0b;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .note-input-section {
+            margin-top: 15px;
+        }
+
+        .note-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .note-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+            background: white;
+        }
+
+        .note-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -780,6 +823,7 @@
             currentExerciseIndex = 0;
             currentSetIndex = 0;
             workoutLog = [];
+            exerciseNotes = {};
             
             document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
             document.getElementById('confirmationModal').classList.add('hidden');
@@ -865,6 +909,8 @@
         // ============================================================
         // Exercise rendering
         // ============================================================
+        let exerciseNotes = {}; // Store notes per exercise index
+        
         async function renderExercise(exerciseIndex, setIndex) {
             const exercise = workoutData.exercises[exerciseIndex];
             const section = document.getElementById('exerciseSection');
@@ -874,18 +920,23 @@
                 workoutLog[exerciseIndex] = Array(exercise.maxSets).fill(null).map(() => ({ weight: '', reps: '', rpe: '' }));
             }
 
-            // Fetch last workout data (with source info)
+            // Fetch last workout data (with source info and note)
             const lastWorkoutResult = await fetchLastWorkout(currentDay, exercise.name, currentWeek);
             const lastWorkoutData = lastWorkoutResult.sets || [];
             const lastWorkoutSource = lastWorkoutResult.source || 'No previous data';
+            const lastWorkoutNote = lastWorkoutResult.note || '';
             
             const lastWorkoutHTML = lastWorkoutData.length > 0 
                 ? lastWorkoutData.map((set, i) => `
-                    <div class="previous-set">Set ${i + 1}: ${set.weight}lbs × ${set.reps} reps @ RPE ${set.rpe}</div>
+                    <div class="previous-set">Set ${i + 1}: ${set.weight} × ${set.reps} reps @ RPE ${set.rpe}</div>
                   `).join('')
                 : Array(exercise.sets).fill(0).map((_, i) => `
                     <div class="previous-set">Set ${i + 1}: No previous data</div>
                   `).join('');
+            
+            const lastNoteHTML = lastWorkoutNote 
+                ? `<div class="previous-note">📝 ${lastWorkoutNote}</div>` 
+                : '';
 
             // Create dots for set navigation
             const dotsHTML = Array.from({length: exercise.maxSets}, (_, i) => {
@@ -897,6 +948,8 @@
 
             const currentData = workoutLog[exerciseIndex][setIndex];
             const isStairmaster = exercise.name.toLowerCase().indexOf('stairmaster') !== -1;
+            const isLastSet = setIndex === exercise.maxSets - 1;
+            const currentNote = exerciseNotes[exerciseIndex] || '';
 
             section.innerHTML = `
                 <div class="exercise-card">
@@ -925,6 +978,7 @@
                         <div class="previous-sets">
                             ${lastWorkoutHTML}
                         </div>
+                        ${lastNoteHTML}
                     </div>
 
                     <div class="sets-container">
@@ -937,8 +991,8 @@
                         <div class="set-input-card">
                             ${!isStairmaster ? `
                                 <div class="input-group">
-                                    <label>Weight (lbs)</label>
-                                    <input type="number" step="5" placeholder="0" id="weightInput" value="${currentData.weight}">
+                                    <label>Weight</label>
+                                    <input type="text" inputmode="decimal" placeholder="e.g. 135 or Orange band" id="weightInput" value="${currentData.weight}">
                                 </div>
                                 <div class="input-group">
                                     <label>Reps</label>
@@ -959,6 +1013,13 @@
                                 </div>
                             `}
                         </div>
+
+                        ${isLastSet ? `
+                            <div class="note-input-section">
+                                <label class="note-label">📝 Note for next week (optional)</label>
+                                <textarea id="exerciseNoteInput" class="note-textarea" placeholder="e.g. Increase weight next week, per leg weight, felt easy...">${currentNote}</textarea>
+                            </div>
+                        ` : ''}
 
                         <div class="set-dots">
                             ${dotsHTML}
@@ -1068,6 +1129,12 @@
             }
             
             workoutLog[currentExerciseIndex][currentSetIndex] = { weight, reps, rpe };
+            
+            // Also capture the note if we're on the last set
+            const noteInput = document.getElementById('exerciseNoteInput');
+            if (noteInput) {
+                exerciseNotes[currentExerciseIndex] = noteInput.value;
+            }
         }
 
         async function saveCurrentSetToSheet() {
@@ -1078,7 +1145,7 @@
             const currentData = workoutLog[currentExerciseIndex][currentSetIndex];
             const exercise = workoutData.exercises[currentExerciseIndex];
             
-            // Only save if there's actual data
+            // Only save set if there's actual data
             if (currentData.weight || currentData.reps || currentData.rpe) {
                 const success = await saveSet(
                     exercise.name,
@@ -1087,10 +1154,34 @@
                     currentData.reps,
                     currentData.rpe
                 );
-                return success;
+                if (!success) return false;
             }
             
-            return true; // If no data, consider it successful
+            // Save note if we're on the last set and there's a note
+            const isLastSet = currentSetIndex === exercise.maxSets - 1;
+            if (isLastSet && exerciseNotes[currentExerciseIndex]) {
+                await saveNoteToSheet(exercise.name, exerciseNotes[currentExerciseIndex]);
+            }
+            
+            return true;
+        }
+
+        async function saveNoteToSheet(exerciseName, note) {
+            try {
+                const params = new URLSearchParams({
+                    action: 'saveNote',
+                    week: currentWeek,
+                    day: currentDay,
+                    exercise: exerciseName,
+                    note: note
+                });
+                const response = await fetch(`${API_URL}?${params.toString()}`);
+                const data = await response.json();
+                return data.success;
+            } catch (error) {
+                console.error('Error saving note:', error);
+                return false;
+            }
         }
 
         // ============================================================
