@@ -706,6 +706,9 @@
     showLoading();
     await loadWorkoutData();
     hideLoading();
+
+    renderWarmup();  // This displays the warmup section
+    updateButtons(); // This sets up the navigation buttons
 }
 
         async function loadWorkoutData() {
