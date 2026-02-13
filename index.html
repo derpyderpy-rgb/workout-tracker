@@ -685,28 +685,14 @@
         }
 
         async function initializeApp() {
-            // Fetch current week
-            currentWeek = await fetchCurrentWeek();
-            
-            // For now, default to Day 1 - later we'll make this smart
-            currentDay = 1;
-            
-            // Fetch workout data
-            workoutData = await fetchWorkoutData(currentDay);
-            
-            if (!workoutData) {
-                document.getElementById('loadingScreen').classList.add('hidden');
-                return;
-            }
-
-            // Update UI
-            document.getElementById('confirmText').textContent = `Week ${currentWeek}, Day ${currentDay}`;
-            document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
-            
-            // Hide loading, show confirmation
-            document.getElementById('loadingScreen').classList.add('hidden');
-            document.getElementById('confirmationModal').classList.remove('hidden');
-        }
+    // Just show the confirmation modal - don't load data yet
+    document.getElementById('loadingScreen').classList.add('hidden');
+    document.getElementById('confirmationModal').classList.remove('hidden');
+    
+    // Set default selections (you can change these)
+    document.getElementById('weekSelect').value = '1';
+    document.getElementById('daySelect').value = '1';
+}
 
        async function confirmWorkout() {
     currentWeek = parseInt(document.getElementById('weekSelect').value);
