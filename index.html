@@ -567,12 +567,10 @@
         <div id="mainContent" class="hidden">
             <!-- Warmup Section -->
             <div id="warmupSection" class="section">
-                <!-- Dynamic warmup content will be inserted here -->
             </div>
 
             <!-- Exercise Sections -->
             <div id="exerciseSection" class="section hidden">
-                <!-- Dynamic exercise content will be inserted here -->
             </div>
 
             <!-- Navigation -->
@@ -597,10 +595,12 @@
         let workoutLog = [];
         let openVideoId = null;
 
+        // ============================================================
         // API Functions
-        async function fetchWorkoutData(day) {
+        // ============================================================
+        async function fetchWorkoutData(day, week) {
             try {
-                const response = await fetch(`${API_URL}?action=getWorkout&day=${day}`);
+                const response = await fetch(`${API_URL}?action=getWorkout&day=${day}&week=${week}`);
                 const data = await response.json();
                 return data;
             } catch (error) {
@@ -621,38 +621,38 @@
             }
         }
 
-        async function fetchLastWorkout(day, exerciseName) {
+        async function fetchLastWorkout(day, exerciseName, week) {
             try {
-                const response = await fetch(`${API_URL}?action=getLastWorkout&day=${day}&exercise=${encodeURIComponent(exerciseName)}`);
+                const response = await fetch(`${API_URL}?action=getLastWorkout&day=${day}&exercise=${encodeURIComponent(exerciseName)}&week=${week}`);
                 const data = await response.json();
-                return data.sets || [];
+                return data;
             } catch (error) {
                 console.error('Error fetching last workout:', error);
-                return [];
+                return { sets: [], source: null };
             }
         }
 
-        async function saveWorkout(exerciseName, setNumber, weight, reps, rpe) {
+        async function saveSet(exerciseName, setNumber, weight, reps, rpe) {
             try {
                 const params = new URLSearchParams({
-                    action: 'saveWorkout',
+                    action: 'saveSet',
                     week: currentWeek,
                     day: currentDay,
-                    exerciseName: exerciseName,
-                    setNumber: setNumber,
+                    exercise: exerciseName,
+                    set: setNumber,
                     weight: weight,
                     reps: reps,
                     rpe: rpe
                 });
-        
+
                 const response = await fetch(`${API_URL}?${params.toString()}`);
                 const data = await response.json();
                 return data.success;
             } catch (error) {
-            console.error('Error saving workout:', error);
-            return false;
-    }
-}
+                console.error('Error saving workout:', error);
+                return false;
+            }
+        }
 
         function showError(message) {
             const container = document.querySelector('.container');
@@ -662,18 +662,24 @@
             container.insertBefore(errorDiv, container.firstChild);
         }
 
+        // ============================================================
+        // Initialization
+        // ============================================================
         async function initializeApp() {
-            // Fetch current week
+            // Fetch current week (auto-detected from sheet data)
             currentWeek = await fetchCurrentWeek();
             
-            // For now, default to Day 1 - later we'll make this smart
+            // Default to Day 1
             currentDay = 1;
             
-            // Fetch workout data
-            workoutData = await fetchWorkoutData(currentDay);
+            // Fetch workout data for this week and day
+            workoutData = await fetchWorkoutData(currentDay, currentWeek);
             
-            if (!workoutData) {
+            if (!workoutData || workoutData.error) {
                 document.getElementById('loadingScreen').classList.add('hidden');
+                if (workoutData && workoutData.error) {
+                    showError(workoutData.error);
+                }
                 return;
             }
 
@@ -697,9 +703,8 @@
             const newDay = prompt("Enter day number (1-4):", currentDay);
             if (newDay && newDay >= 1 && newDay <= 4) {
                 currentDay = parseInt(newDay);
-                // Reload workout data
                 showLoading();
-                fetchWorkoutData(currentDay).then(data => {
+                fetchWorkoutData(currentDay, currentWeek).then(data => {
                     workoutData = data;
                     document.getElementById('confirmText').textContent = `Week ${currentWeek}, Day ${currentDay}`;
                     document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
@@ -716,6 +721,9 @@
             document.getElementById('loadingScreen').classList.add('hidden');
         }
 
+        // ============================================================
+        // Video toggle
+        // ============================================================
         function toggleVideo(id) {
             const videoContainer = document.getElementById('video-' + id);
             const button = document.getElementById('btn-' + id);
@@ -725,7 +733,6 @@
                 button.innerHTML = '▶️ Video';
                 openVideoId = null;
             } else {
-                // Close previously open video
                 if (openVideoId !== null) {
                     const prevContainer = document.getElementById('video-' + openVideoId);
                     const prevButton = document.getElementById('btn-' + openVideoId);
@@ -741,10 +748,12 @@
             }
         }
 
+        // ============================================================
+        // Warmup rendering
+        // ============================================================
         function renderWarmup() {
             const section = document.getElementById('warmupSection');
             
-            // Render both upper and lower warmups
             const renderWarmupSection = (items, title) => {
                 if (items.length === 0) return '';
                 
@@ -776,72 +785,9 @@
             section.innerHTML = upperHTML + lowerHTML;
         }
 
-     async function nextStep() {
-    if (currentStep === 0) {
-        // Moving from warmup to first exercise
-        document.getElementById('warmupSection').classList.add('hidden');
-        document.getElementById('exerciseSection').classList.remove('hidden');
-        currentExerciseIndex = 0;
-        currentSetIndex = 0;
-        await renderExercise(currentExerciseIndex, currentSetIndex);
-        currentStep = 1;
-    } else {
-        // Save current set data to Google Sheets immediately
-        showLoading();
-        const success = await saveCurrentSetToSheet();
-        hideLoading();
-        
-        if (!success) {
-            alert('⚠️ Failed to save set data. Please check your connection and try again.');
-            return;
-        }
-        
-        const exercise = workoutData.exercises[currentExerciseIndex];
-        
-        // Check if we need to move to next set or next exercise
-        if (currentSetIndex < exercise.maxSets - 1) {
-            // Move to next set
-            currentSetIndex++;
-            await renderExercise(currentExerciseIndex, currentSetIndex);
-        } else if (currentExerciseIndex < workoutData.exercises.length - 1) {
-            // Move to next exercise
-            currentExerciseIndex++;
-            currentSetIndex = 0;
-            await renderExercise(currentExerciseIndex, currentSetIndex);
-        } else {
-            // Workout complete
-            completeWorkout();
-            return;
-        }
-        currentStep++;
-    }
-    updateProgress();
-    updateButtons();
-}
-
-        function previousStep() {
-            if (currentStep === 1 && currentSetIndex === 0) {
-                // Go back to warmup
-                document.getElementById('exerciseSection').classList.add('hidden');
-                document.getElementById('warmupSection').classList.remove('hidden');
-                currentStep = 0;
-            } else if (currentSetIndex > 0) {
-                // Go to previous set
-                currentSetIndex--;
-                renderExercise(currentExerciseIndex, currentSetIndex);
-                currentStep--;
-            } else if (currentExerciseIndex > 0) {
-                // Go to previous exercise, last set
-                currentExerciseIndex--;
-                const prevExercise = workoutData.exercises[currentExerciseIndex];
-                currentSetIndex = prevExercise.maxSets - 1;
-                renderExercise(currentExerciseIndex, currentSetIndex);
-                currentStep--;
-            }
-            updateProgress();
-            updateButtons();
-        }
-
+        // ============================================================
+        // Exercise rendering
+        // ============================================================
         async function renderExercise(exerciseIndex, setIndex) {
             const exercise = workoutData.exercises[exerciseIndex];
             const section = document.getElementById('exerciseSection');
@@ -851,8 +797,10 @@
                 workoutLog[exerciseIndex] = Array(exercise.maxSets).fill(null).map(() => ({ weight: '', reps: '', rpe: '' }));
             }
 
-            // Fetch last workout data
-            const lastWorkoutData = await fetchLastWorkout(currentDay, exercise.name);
+            // Fetch last workout data (with source info)
+            const lastWorkoutResult = await fetchLastWorkout(currentDay, exercise.name, currentWeek);
+            const lastWorkoutData = lastWorkoutResult.sets || [];
+            const lastWorkoutSource = lastWorkoutResult.source || 'No previous data';
             
             const lastWorkoutHTML = lastWorkoutData.length > 0 
                 ? lastWorkoutData.map((set, i) => `
@@ -871,6 +819,7 @@
             }).join('');
 
             const currentData = workoutLog[exerciseIndex][setIndex];
+            const isStairmaster = exercise.name.toLowerCase().indexOf('stairmaster') !== -1;
 
             section.innerHTML = `
                 <div class="exercise-card">
@@ -895,7 +844,7 @@
                     ` : ''}
 
                     <div class="last-workout">
-                        <div class="last-workout-title">Previous Workout</div>
+                        <div class="last-workout-title">Previous Workout (${lastWorkoutSource})</div>
                         <div class="previous-sets">
                             ${lastWorkoutHTML}
                         </div>
@@ -909,7 +858,7 @@
                         </div>
 
                         <div class="set-input-card">
-                            ${exercise.name !== 'Stairmaster' ? `
+                            ${!isStairmaster ? `
                                 <div class="input-group">
                                     <label>Weight (lbs)</label>
                                     <input type="number" step="5" placeholder="0" id="weightInput" value="${currentData.weight}">
@@ -942,23 +891,96 @@
             `;
         }
 
-    async function nextSet() {
-    showLoading();
-    const success = await saveCurrentSetToSheet();
-    hideLoading();
-    
-    if (!success) {
-        alert('⚠️ Failed to save set data. Please check your connection and try again.');
-        return;
-    }
-    
-    const exercise = workoutData.exercises[currentExerciseIndex];
-    if (currentSetIndex < exercise.maxSets - 1) {
-        currentSetIndex++;
-        await renderExercise(currentExerciseIndex, currentSetIndex);
-    }
-}
+        // ============================================================
+        // Navigation
+        // ============================================================
+        async function nextStep() {
+            if (currentStep === 0) {
+                // Moving from warmup to first exercise
+                document.getElementById('warmupSection').classList.add('hidden');
+                document.getElementById('exerciseSection').classList.remove('hidden');
+                currentExerciseIndex = 0;
+                currentSetIndex = 0;
+                await renderExercise(currentExerciseIndex, currentSetIndex);
+                currentStep = 1;
+            } else {
+                // Save current set data to Google Sheets immediately
+                showLoading();
+                const success = await saveCurrentSetToSheet();
+                hideLoading();
+                
+                if (!success) {
+                    alert('⚠️ Failed to save set data. Please check your connection and try again.');
+                    return;
+                }
+                
+                const exercise = workoutData.exercises[currentExerciseIndex];
+                
+                if (currentSetIndex < exercise.maxSets - 1) {
+                    currentSetIndex++;
+                    await renderExercise(currentExerciseIndex, currentSetIndex);
+                } else if (currentExerciseIndex < workoutData.exercises.length - 1) {
+                    currentExerciseIndex++;
+                    currentSetIndex = 0;
+                    await renderExercise(currentExerciseIndex, currentSetIndex);
+                } else {
+                    completeWorkout();
+                    return;
+                }
+                currentStep++;
+            }
+            updateProgress();
+            updateButtons();
+        }
 
+        function previousStep() {
+            if (currentStep === 1 && currentSetIndex === 0) {
+                document.getElementById('exerciseSection').classList.add('hidden');
+                document.getElementById('warmupSection').classList.remove('hidden');
+                currentStep = 0;
+            } else if (currentSetIndex > 0) {
+                currentSetIndex--;
+                renderExercise(currentExerciseIndex, currentSetIndex);
+                currentStep--;
+            } else if (currentExerciseIndex > 0) {
+                currentExerciseIndex--;
+                const prevExercise = workoutData.exercises[currentExerciseIndex];
+                currentSetIndex = prevExercise.maxSets - 1;
+                renderExercise(currentExerciseIndex, currentSetIndex);
+                currentStep--;
+            }
+            updateProgress();
+            updateButtons();
+        }
+
+        async function nextSet() {
+            showLoading();
+            const success = await saveCurrentSetToSheet();
+            hideLoading();
+            
+            if (!success) {
+                alert('⚠️ Failed to save set data. Please check your connection and try again.');
+                return;
+            }
+            
+            const exercise = workoutData.exercises[currentExerciseIndex];
+            if (currentSetIndex < exercise.maxSets - 1) {
+                currentSetIndex++;
+                await renderExercise(currentExerciseIndex, currentSetIndex);
+            }
+        }
+
+        function previousSet() {
+            saveCurrentSet(); // save locally only when going back
+            if (currentSetIndex > 0) {
+                currentSetIndex--;
+                renderExercise(currentExerciseIndex, currentSetIndex);
+            }
+        }
+
+        // ============================================================
+        // Saving
+        // ============================================================
         function saveCurrentSet() {
             const weight = document.getElementById('weightInput')?.value || '';
             const reps = document.getElementById('repsInput')?.value || '';
@@ -970,32 +992,35 @@
             
             workoutLog[currentExerciseIndex][currentSetIndex] = { weight, reps, rpe };
         }
-async function saveCurrentSetToSheet() {
-    // First save to local memory
-    saveCurrentSet();
-    
-    // Then save to Google Sheets
-    const currentData = workoutLog[currentExerciseIndex][currentSetIndex];
-    const exercise = workoutData.exercises[currentExerciseIndex];
-    
-    // Only save if there's actual data
-    if (currentData.weight || currentData.reps || currentData.rpe) {
-        const success = await saveWorkout(
-            exercise.name,
-            currentSetIndex + 1,
-            currentData.weight,
-            currentData.reps,
-            currentData.rpe
-        );
-        return success;
-    }
-    
-    return true; // If no data, consider it successful
-}
 
-        
+        async function saveCurrentSetToSheet() {
+            // First save to local memory
+            saveCurrentSet();
+            
+            // Then save to Google Sheets
+            const currentData = workoutLog[currentExerciseIndex][currentSetIndex];
+            const exercise = workoutData.exercises[currentExerciseIndex];
+            
+            // Only save if there's actual data
+            if (currentData.weight || currentData.reps || currentData.rpe) {
+                const success = await saveSet(
+                    exercise.name,
+                    currentSetIndex + 1,
+                    currentData.weight,
+                    currentData.reps,
+                    currentData.rpe
+                );
+                return success;
+            }
+            
+            return true; // If no data, consider it successful
+        }
+
+        // ============================================================
+        // Progress & buttons
+        // ============================================================
         function updateProgress() {
-            const totalSteps = workoutData.exercises.reduce((sum, ex) => sum + ex.maxSets, 0) + 1; // +1 for warmup
+            const totalSteps = workoutData.exercises.reduce((sum, ex) => sum + ex.maxSets, 0) + 1;
             const progress = (currentStep / totalSteps) * 100;
             document.getElementById('progressBar').style.width = progress + '%';
         }
@@ -1018,33 +1043,35 @@ async function saveCurrentSetToSheet() {
             }
         }
 
+        // ============================================================
+        // Completion
+        // ============================================================
         async function completeWorkout() {
-    // Save the last set
-    showLoading();
-    await saveCurrentSetToSheet();
-    hideLoading();
-    
-    // Format the summary
-    let summary = `Day ${currentDay} - ${workoutData.type} Complete! 🎉\n\n`;
-    workoutData.exercises.forEach((exercise, i) => {
-        summary += `${exercise.name}:\n`;
-        workoutLog[i].forEach((set, j) => {
-            if (set.weight || set.reps || set.rpe) {
-                if (exercise.name === 'Stairmaster') {
-                    summary += `  ${set.reps} minutes @ level ${set.rpe}\n`;
-                } else {
-                    summary += `  Set ${j + 1}: ${set.weight}lbs × ${set.reps} reps @ RPE ${set.rpe}\n`;
+            showLoading();
+            await saveCurrentSetToSheet();
+            hideLoading();
+            
+            let summary = `Day ${currentDay} - ${workoutData.type} Complete! 🎉\n\n`;
+            workoutData.exercises.forEach((exercise, i) => {
+                summary += `${exercise.name}:\n`;
+                if (workoutLog[i]) {
+                    workoutLog[i].forEach((set, j) => {
+                        if (set && (set.weight || set.reps || set.rpe)) {
+                            const isStairmaster = exercise.name.toLowerCase().indexOf('stairmaster') !== -1;
+                            if (isStairmaster) {
+                                summary += `  ${set.reps} minutes @ level ${set.rpe}\n`;
+                            } else {
+                                summary += `  Set ${j + 1}: ${set.weight}lbs × ${set.reps} reps @ RPE ${set.rpe}\n`;
+                            }
+                        }
+                    });
                 }
-            }
-        });
-        summary += '\n';
-    });
-    
-    alert(summary + '\nAll data saved to Google Sheets! 💪');
-    
-    // Reset for next workout
-    location.reload();
-}
+                summary += '\n';
+            });
+            
+            alert(summary + '\nAll data saved to Google Sheets! 💪');
+            location.reload();
+        }
 
         // Initialize app on load
         initializeApp();
