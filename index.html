@@ -726,7 +726,17 @@
         alert('Failed to load workout data. Please check your connection.');
     }
 }
-
+function initializeWorkoutLog() {
+    workoutLog = [];
+    workoutData.exercises.forEach(exercise => {
+        const sets = [];
+        for (let i = 0; i < exercise.maxSets; i++) {
+            sets.push({ weight: '', reps: '', rpe: '' });
+        }
+        workoutLog.push(sets);
+    });
+}
+        
         function changeWorkout() {
             const newDay = prompt("Enter day number (1-4):", currentDay);
             if (newDay && newDay >= 1 && newDay <= 4) {
