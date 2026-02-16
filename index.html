@@ -423,8 +423,11 @@
             const lastSets = lastResult.sets || [], lastSource = lastResult.source || 'No previous data', lastNote = lastResult.note || '';
 
             const lastHTML = lastSets.length > 0
-                ? lastSets.map((s, i) => `<div class="previous-set">Set ${i+1}: ${s.weight} × ${s.reps} reps @ RPE ${s.rpe}</div>`).join('')
-                : Array(exercise.sets).fill(0).map((_, i) => `<div class="previous-set">Set ${i+1}: No previous data</div>`).join('');
+                ? lastSets.map((s, i) => {
+                    if (isSM) return `<div class="previous-set">Seg ${i+1}: ${s.reps} min @ level ${s.rpe}</div>`;
+                    return `<div class="previous-set">Set ${i+1}: ${s.weight} × ${s.reps} reps @ RPE ${s.rpe}</div>`;
+                  }).join('')
+                : Array(exercise.maxSets).fill(0).map((_, i) => `<div class="previous-set">${isSM?'Seg':'Set'} ${i+1}: No previous data</div>`).join('');
             const lastNoteHTML = lastNote ? `<div class="previous-note">📝 ${lastNote}</div>` : '';
 
             const dots = Array.from({length: exercise.maxSets}, (_, i) => {
@@ -448,8 +451,8 @@
                             ${exercise.videoUrl ? `<button class="video-toggle" id="btn-exercise-${exerciseIndex}" onclick="toggleVideo('exercise-${exerciseIndex}')">▶️ Form</button>` : ''}
                         </div>
                         <div class="exercise-meta">
-                            <span class="meta-tag">${exercise.sets} sets</span>
-                            <span class="meta-tag">${exercise.reps} reps</span>
+                            <span class="meta-tag">${isSM ? exercise.reps : exercise.sets + ' sets'}</span>
+                            ${!isSM ? `<span class="meta-tag">${exercise.reps} reps</span>` : ''}
                             ${exercise.rir ? `<span class="meta-tag">${exercise.rir}</span>` : ''}
                         </div>
                         ${exercise.notes ? `<div class="notes">💡 ${exercise.notes}</div>` : ''}
@@ -462,9 +465,9 @@
                     </div>
                     <div class="sets-container">
                         <div class="set-navigation">
-                            <button class="set-nav-btn" onclick="previousSet()" ${setIndex===0?'disabled':''}>← Prev Set</button>
-                            <div class="set-indicator">Set ${setIndex+1} of ${exercise.maxSets}</div>
-                            <button class="set-nav-btn" onclick="nextSet()" ${setIndex===exercise.maxSets-1?'disabled':''}>Next Set →</button>
+                            <button class="set-nav-btn" onclick="previousSet()" ${setIndex===0?'disabled':''}>← Prev ${isSM?'Seg':'Set'}</button>
+                            <div class="set-indicator">${isSM?'Segment':'Set'} ${setIndex+1} of ${exercise.maxSets}</div>
+                            <button class="set-nav-btn" onclick="nextSet()" ${setIndex===exercise.maxSets-1?'disabled':''}>Next ${isSM?'Seg':'Set'} →</button>
                         </div>
                         ${showTimer ? `<div class="rest-timer" id="restTimer"><span class="rest-timer-icon">⏱️</span><span>Rest: <span class="rest-timer-time">0:00</span></span></div>` : ''}
                         <div class="set-input-card">
@@ -484,10 +487,10 @@
                             ` : `
                                 <div class="input-group">
                                     <label>Duration (minutes)</label>
-                                    <input type="number" inputmode="decimal" placeholder="20" id="repsInput" value="${cur.reps}">
+                                    <input type="number" inputmode="decimal" placeholder="5" id="repsInput" value="${cur.reps}">
                                 </div>
                                 <div class="input-group">
-                                    <label>Average Level</label>
+                                    <label>Level</label>
                                     <input type="number" inputmode="decimal" step="1" placeholder="7" id="rpeInput" value="${cur.rpe}">
                                 </div>
                             `}
@@ -596,7 +599,7 @@
                 summary += `${ex.name}:\n`;
                 if (workoutLog[i]) workoutLog[i].forEach((s, j) => {
                     if (s && (s.weight || s.reps || s.rpe)) {
-                        if (ex.name.toLowerCase().includes('stairmaster')) summary += `  ${s.reps} min @ level ${s.rpe}\n`;
+                        if (ex.name.toLowerCase().includes('stairmaster')) summary += `  Seg ${j+1}: ${s.reps} min @ level ${s.rpe}\n`;
                         else summary += `  Set ${j+1}: ${s.weight} × ${s.reps} reps @ RPE ${s.rpe}\n`;
                     }
                 });
