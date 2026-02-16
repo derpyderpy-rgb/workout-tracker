@@ -421,6 +421,7 @@
 
             const lastResult = await fetchLastWorkout(currentDay, exercise.name, currentWeek);
             const lastSets = lastResult.sets || [], lastSource = lastResult.source || 'No previous data', lastNote = lastResult.note || '';
+            const isSM = exercise.name.toLowerCase().includes('stairmaster');
 
             const lastHTML = lastSets.length > 0
                 ? lastSets.map((s, i) => {
@@ -438,7 +439,6 @@
             }).join('');
 
             const cur = workoutLog[exerciseIndex][setIndex];
-            const isSM = exercise.name.toLowerCase().includes('stairmaster');
             const isLast = setIndex === exercise.maxSets - 1;
             const curNote = exerciseNotes[exerciseIndex] || '';
             const showTimer = setIndex > 0;
