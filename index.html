@@ -5,587 +5,224 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workout Tracker</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #f5f5f5;
-            padding: 0;
-            margin: 0;
+            padding: 0; margin: 0;
             -webkit-font-smoothing: antialiased;
         }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            min-height: 100vh;
-            padding-bottom: 80px;
-        }
+        .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; padding-bottom: 80px; }
 
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            color: white; padding: 20px; position: sticky; top: 0; z-index: 100;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        .header h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-
-        .header .workout-info {
-            font-size: 14px;
-            opacity: 0.9;
-        }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header .workout-info { font-size: 14px; opacity: 0.9; }
 
         .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.95);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.95); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 2000;
         }
-
         .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+            width: 50px; height: 50px; border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            margin-top: 20px;
-            color: #667eea;
-            font-weight: 600;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { margin-top: 20px; color: #667eea; font-weight: 600; }
 
         .confirmation-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); display: flex; align-items: center;
+            justify-content: center; z-index: 1000; padding: 20px;
         }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            max-width: 400px;
-            width: 100%;
-        }
-
-        .modal-content h2 {
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .modal-content p {
-            margin-bottom: 20px;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-        }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 400px; width: 100%; }
+        .modal-content h2 { margin-bottom: 15px; color: #333; }
 
         .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;
         }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:active { transform: scale(0.98); background: #5568d3; }
 
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:active {
-            transform: scale(0.98);
-            background: #5568d3;
-        }
-
-        .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
-        }
-
-        .btn-secondary:active {
-            transform: scale(0.98);
-            background: #d0d0d0;
-        }
-
-        .section {
-            padding: 20px;
-        }
-
+        .section { padding: 20px; }
         .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 18px; font-weight: 700; color: #333; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 8px;
         }
 
         .warmup-item {
-            background: #f8f9fa;
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 3px solid #667eea;
+            background: #f8f9fa; padding: 12px 15px; border-radius: 8px;
+            margin-bottom: 10px; border-left: 3px solid #667eea;
         }
-
         .warmup-item .name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            justify-content: space-between;
+            font-weight: 600; color: #333; margin-bottom: 4px;
+            display: flex; align-items: center; gap: 8px; justify-content: space-between;
         }
-
-        .warmup-item .name-text {
-            flex: 1;
-        }
-
-        .warmup-item .details {
-            font-size: 14px;
-            color: #666;
-            margin-top: 4px;
-        }
+        .warmup-item .name-text { flex: 1; }
+        .warmup-item .details { font-size: 14px; color: #666; margin-top: 4px; }
 
         .video-toggle {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 5px;
-            font-size: 11px;
-            cursor: pointer;
-            font-weight: 600;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            background: #667eea; color: white; border: none; padding: 6px 12px;
+            border-radius: 5px; font-size: 11px; cursor: pointer; font-weight: 600;
+            white-space: nowrap; display: flex; align-items: center; gap: 4px;
         }
-
-        .video-toggle:active {
-            transform: scale(0.95);
-        }
+        .video-toggle:active { transform: scale(0.95); }
 
         .video-link {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            margin-top: 12px;
+            background: #667eea; color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 600;
+            text-decoration: none; display: inline-block; text-align: center; margin-top: 12px;
         }
-
-        .video-link:active {
-            transform: scale(0.98);
-            background: #5568d3;
-        }
+        .video-link:active { transform: scale(0.98); background: #5568d3; }
 
         .video-container {
-            margin-top: 12px;
-            border-radius: 8px;
-            overflow: hidden;
-            display: none;
-            background: #f0f0f0;
-            padding: 15px;
-            text-align: center;
+            margin-top: 12px; border-radius: 8px; overflow: hidden; display: none;
+            background: #f0f0f0; padding: 15px; text-align: center;
         }
+        .video-container.show { display: block; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .video-error { color: #666; font-size: 13px; margin-bottom: 10px; }
 
-        .video-container.show {
-            display: block;
-            animation: slideDown 0.3s ease;
+        /* Workout Preview */
+        .preview-item {
+            background: #f8f9fa; padding: 14px 15px; border-radius: 8px;
+            margin-bottom: 10px; border-left: 3px solid #667eea;
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
         }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .preview-item-info { flex: 1; }
+        .preview-item-name { font-weight: 600; color: #333; font-size: 15px; }
+        .preview-item-detail { font-size: 13px; color: #888; margin-top: 3px; }
+        .preview-video-btn {
+            background: #667eea; color: white; border: none; padding: 6px 12px;
+            border-radius: 5px; font-size: 11px; font-weight: 600; text-decoration: none; white-space: nowrap;
         }
+        .preview-video-btn:active { transform: scale(0.95); background: #5568d3; }
 
-        .video-error {
-            color: #666;
-            font-size: 13px;
-            margin-bottom: 10px;
+        /* Rest Timer */
+        .rest-timer {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 15px; margin-bottom: 15px; border-radius: 8px;
+            background: #f0f0f0; color: #666; font-weight: 600; font-size: 15px;
+            transition: background 0.5s ease, color 0.5s ease;
         }
+        .rest-timer.ready { background: #d1fae5; color: #059669; }
+        .rest-timer-icon { font-size: 18px; }
 
+        /* Exercise Card */
         .exercise-card {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background: white; border: 1px solid #e0e0e0; border-radius: 12px;
+            padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-
-        .exercise-header {
-            margin-bottom: 15px;
-        }
-
+        .exercise-header { margin-bottom: 15px; }
         .exercise-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            font-size: 20px; font-weight: 700; color: #333; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
         }
-
-        .exercise-title .title-text {
-            flex: 1;
-        }
-
-        .exercise-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .meta-tag {
-            background: #f0f0f0;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #555;
-        }
-
+        .exercise-title .title-text { flex: 1; }
+        .exercise-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .meta-tag { background: #f0f0f0; padding: 6px 12px; border-radius: 6px; font-size: 13px; color: #555; }
         .notes {
-            background: #fffbea;
-            border-left: 3px solid #f59e0b;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 14px;
-            color: #666;
-            margin-top: 10px;
-            font-style: italic;
+            background: #fffbea; border-left: 3px solid #f59e0b; padding: 10px;
+            border-radius: 6px; font-size: 14px; color: #666; margin-top: 10px; font-style: italic;
         }
 
-        .last-workout {
-            background: #f0f4ff;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
+        .last-workout { background: #f0f4ff; padding: 15px; border-radius: 8px; margin: 15px 0; }
         .last-workout-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #667eea;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 13px; font-weight: 600; color: #667eea; margin-bottom: 12px;
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
+        .previous-sets { display: flex; flex-direction: column; gap: 8px; }
+        .previous-set { font-size: 14px; color: #555; padding: 8px; background: white; border-radius: 6px; }
 
-        .previous-sets {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .previous-set {
-            font-size: 14px;
-            color: #555;
-            padding: 8px;
-            background: white;
-            border-radius: 6px;
-        }
-
-        .sets-container {
-            margin-top: 15px;
-        }
-
+        .sets-container { margin-top: 15px; }
         .set-navigation {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;
         }
-
         .set-nav-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
+            background: #667eea; color: white; border: none; padding: 8px 16px;
+            border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
         }
+        .set-nav-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .set-nav-btn:active:not(:disabled) { transform: scale(0.98); }
+        .set-indicator { font-weight: 700; color: #667eea; font-size: 16px; }
 
-        .set-nav-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .set-nav-btn:active:not(:disabled) {
-            transform: scale(0.98);
-        }
-
-        .set-indicator {
-            font-weight: 700;
-            color: #667eea;
-            font-size: 16px;
-        }
-
-        .set-input-card {
-            background: #fafafa;
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #667eea;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        .input-group:last-child {
-            margin-bottom: 0;
-        }
-
+        .set-input-card { background: #fafafa; padding: 20px; border-radius: 10px; border: 2px solid #667eea; }
+        .input-group { margin-bottom: 15px; }
+        .input-group:last-child { margin-bottom: 0; }
         .input-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            display: block; font-size: 13px; font-weight: 600; color: #555;
+            margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
         }
-
         .input-group input {
-            width: 100%;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 18px;
-            text-align: center;
-            background: white;
-            font-weight: 600;
+            width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px;
+            font-size: 18px; text-align: center; background: white; font-weight: 600;
         }
-
         .input-group input:focus {
-            outline: none;
-            border-color: #667eea;
+            outline: none; border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .navigation {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 15px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            gap: 10px;
-            max-width: 600px;
-            margin: 0 auto;
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex; gap: 10px; max-width: 600px; margin: 0 auto;
         }
-
         .nav-btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
+            flex: 1; padding: 15px; border: none; border-radius: 10px;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;
         }
+        .nav-btn-prev { background: #e0e0e0; color: #333; }
+        .nav-btn-next { background: #667eea; color: white; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .nav-btn:active:not(:disabled) { transform: scale(0.98); }
 
-        .nav-btn-prev {
-            background: #e0e0e0;
-            color: #333;
-        }
+        .progress-bar { height: 4px; background: #e0e0e0; position: relative; margin-top: 10px; }
+        .progress-fill { height: 100%; background: white; transition: width 0.3s ease; }
 
-        .nav-btn-next {
-            background: #667eea;
-            color: white;
-        }
+        .hidden { display: none; }
+        .complete-btn { background: #10b981 !important; }
+        .complete-btn:active { background: #059669 !important; }
 
-        .nav-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .set-dots { display: flex; gap: 8px; justify-content: center; margin-top: 15px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
+        .dot.active { background: #667eea; }
+        .dot.filled { background: #10b981; }
 
-        .nav-btn:active:not(:disabled) {
-            transform: scale(0.98);
-        }
-
-        .progress-bar {
-            height: 4px;
-            background: #e0e0e0;
-            position: relative;
-            margin-top: 10px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: white;
-            transition: width 0.3s ease;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .complete-btn {
-            background: #10b981 !important;
-        }
-
-        .complete-btn:active {
-            background: #059669 !important;
-        }
-
-        .set-dots {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 15px;
-        }
-
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #ddd;
-        }
-
-        .dot.active {
-            background: #667eea;
-        }
-
-        .dot.filled {
-            background: #10b981;
-        }
-
-        .error-message {
-            background: #fee;
-            border-left: 4px solid #f00;
-            padding: 15px;
-            margin: 20px;
-            border-radius: 8px;
-            color: #c00;
-        }
-
-        .warmup-section-divider {
-            margin: 25px 0 15px 0;
-        }
+        .error-message { background: #fee; border-left: 4px solid #f00; padding: 15px; margin: 20px; border-radius: 8px; color: #c00; }
+        .warmup-section-divider { margin: 25px 0 15px 0; }
 
         .previous-note {
-            margin-top: 10px;
-            padding: 10px;
-            background: #fff8e1;
-            border-left: 3px solid #f59e0b;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #666;
-            font-style: italic;
+            margin-top: 10px; padding: 10px; background: #fff8e1;
+            border-left: 3px solid #f59e0b; border-radius: 6px;
+            font-size: 13px; color: #666; font-style: italic;
         }
-
-        .note-input-section {
-            margin-top: 15px;
-        }
-
+        .note-input-section { margin-top: 15px; }
         .note-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            display: block; font-size: 13px; font-weight: 600; color: #555;
+            margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
         }
-
         .note-textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 60px;
-            background: white;
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;
+            font-size: 14px; font-family: inherit; resize: vertical; min-height: 60px; background: white;
         }
-
-        .note-textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
+        .note-textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Loading Screen -->
         <div id="loadingScreen" class="loading">
             <div class="loading-spinner"></div>
             <div class="loading-text">Loading workout...</div>
         </div>
 
-        <!-- Confirmation Modal -->
         <div id="confirmationModal" class="confirmation-modal hidden">
             <div class="modal-content">
                 <h2>Start Workout</h2>
@@ -593,14 +230,8 @@
                 <div style="margin-bottom: 15px;">
                     <label style="display:block; font-size:13px; font-weight:600; color:#555; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Week</label>
                     <select id="weekSelect" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; font-weight:600; background:white;">
-                        <option value="1">Week 1</option>
-                        <option value="2">Week 2</option>
-                        <option value="3">Week 3</option>
-                        <option value="4">Week 4</option>
-                        <option value="5">Week 5</option>
-                        <option value="6">Week 6</option>
-                        <option value="7">Week 7</option>
-                        <option value="8">Week 8</option>
+                        <option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option>
+                        <option value="5">Week 5</option><option value="6">Week 6</option><option value="7">Week 7</option><option value="8">Week 8</option>
                     </select>
                 </div>
                 <div style="margin-bottom: 20px;">
@@ -612,32 +243,20 @@
                         <button class="day-select-btn" onclick="selectDay(4)" data-day="4" style="flex:1; padding:12px; border:2px solid #667eea; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:white; color:#667eea;">Day 4</button>
                     </div>
                 </div>
-                <div class="modal-buttons">
-                    <button class="btn btn-primary" onclick="confirmWorkout()" style="width:100%;">Start Workout</button>
-                </div>
+                <div><button class="btn btn-primary" onclick="confirmWorkout()" style="width:100%;">Start Workout</button></div>
             </div>
         </div>
 
-        <!-- Header -->
         <div class="header">
             <h1>Workout Tracker</h1>
             <div class="workout-info" id="headerInfo">Week 1 • Day 1 • Upper</div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressBar" style="width: 0%"></div>
-            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width: 0%"></div></div>
         </div>
 
-        <!-- Main Content -->
         <div id="mainContent" class="hidden">
-            <!-- Warmup Section -->
-            <div id="warmupSection" class="section">
-            </div>
-
-            <!-- Exercise Sections -->
-            <div id="exerciseSection" class="section hidden">
-            </div>
-
-            <!-- Navigation -->
+            <div id="warmupSection" class="section"></div>
+            <div id="previewSection" class="section hidden"></div>
+            <div id="exerciseSection" class="section hidden"></div>
             <div class="navigation">
                 <button class="nav-btn nav-btn-prev" onclick="previousStep()" id="prevBtn">Previous</button>
                 <button class="nav-btn nav-btn-next" onclick="nextStep()" id="nextBtn">Next</button>
@@ -646,310 +265,180 @@
     </div>
 
     <script>
-        // API Configuration
         const API_URL = 'https://script.google.com/macros/s/AKfycbwtxXz8agZO1Sp3if4Aub1CImIDl14RjpFug3vM2yzN0tckDxeuWDUAKVul7jJ9rZI/exec';
 
-        // State
-        let currentDay = 1;
-        let currentWeek = 1;
-        let workoutData = null;
-        let currentStep = 0;
-        let currentExerciseIndex = 0;
-        let currentSetIndex = 0;
-        let workoutLog = [];
-        let openVideoId = null;
-
-        // ============================================================
-        // API Functions
-        // ============================================================
-        async function fetchWorkoutData(day, week) {
-            try {
-                const response = await fetch(`${API_URL}?action=getWorkout&day=${day}&week=${week}`);
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('Error fetching workout:', error);
-                showError('Failed to load workout data. Please check your connection.');
-                return null;
-            }
-        }
-
-        async function fetchStatus() {
-            try {
-                const response = await fetch(`${API_URL}?action=getStatus`);
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('Error fetching status:', error);
-                return { week: 1, nextDay: 1, daysCompleted: [] };
-            }
-        }
-
-        async function fetchLastWorkout(day, exerciseName, week) {
-            try {
-                const response = await fetch(`${API_URL}?action=getLastWorkout&day=${day}&exercise=${encodeURIComponent(exerciseName)}&week=${week}`);
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('Error fetching last workout:', error);
-                return { sets: [], source: null };
-            }
-        }
-
-        async function saveSet(exerciseName, setNumber, weight, reps, rpe) {
-            try {
-                const params = new URLSearchParams({
-                    action: 'saveSet',
-                    week: currentWeek,
-                    day: currentDay,
-                    exercise: exerciseName,
-                    set: setNumber,
-                    weight: weight,
-                    reps: reps,
-                    rpe: rpe
-                });
-
-                const response = await fetch(`${API_URL}?${params.toString()}`);
-                const data = await response.json();
-                return data.success;
-            } catch (error) {
-                console.error('Error saving workout:', error);
-                return false;
-            }
-        }
-
-        function showError(message) {
-            const container = document.querySelector('.container');
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
-            container.insertBefore(errorDiv, container.firstChild);
-        }
-
-        // ============================================================
-        // Initialization & Modal
-        // ============================================================
+        let currentDay = 1, currentWeek = 1, workoutData = null;
+        let currentStep = 0; // 0=warmup, 1=preview, 2+=exercises
+        let currentExerciseIndex = 0, currentSetIndex = 0;
+        let workoutLog = [], exerciseNotes = {}, openVideoId = null;
+        let restTimerInterval = null, restTimerStart = null;
+        const REST_THRESHOLD = 90;
         let statusData = null;
 
+        // === API ===
+        async function fetchWorkoutData(day, week) {
+            try { const r = await fetch(`${API_URL}?action=getWorkout&day=${day}&week=${week}`); return await r.json(); }
+            catch(e) { console.error(e); showError('Failed to load workout data.'); return null; }
+        }
+        async function fetchStatus() {
+            try { const r = await fetch(`${API_URL}?action=getStatus`); return await r.json(); }
+            catch(e) { return { week:1, nextDay:1, daysCompleted:[] }; }
+        }
+        async function fetchLastWorkout(day, name, week) {
+            try { const r = await fetch(`${API_URL}?action=getLastWorkout&day=${day}&exercise=${encodeURIComponent(name)}&week=${week}`); return await r.json(); }
+            catch(e) { return { sets:[], source:null, note:'' }; }
+        }
+        async function saveSet(name, setNum, weight, reps, rpe) {
+            try {
+                const p = new URLSearchParams({ action:'saveSet', week:currentWeek, day:currentDay, exercise:name, set:setNum, weight, reps, rpe });
+                const r = await fetch(`${API_URL}?${p}`); return (await r.json()).success;
+            } catch(e) { return false; }
+        }
+        async function saveNoteToSheet(name, note) {
+            try {
+                const p = new URLSearchParams({ action:'saveNote', week:currentWeek, day:currentDay, exercise:name, note });
+                const r = await fetch(`${API_URL}?${p}`); return (await r.json()).success;
+            } catch(e) { return false; }
+        }
+        function showError(msg) {
+            const d = document.createElement('div'); d.className = 'error-message'; d.textContent = msg;
+            document.querySelector('.container').insertBefore(d, document.querySelector('.container').firstChild);
+        }
+
+        // === Init ===
         async function initializeApp() {
-            // Fetch status (auto-detected week, next day, completed days)
             statusData = await fetchStatus();
-            
-            currentWeek = statusData.week;
-            currentDay = statusData.nextDay;
-            
-            // Set up the week selector
+            currentWeek = statusData.week; currentDay = statusData.nextDay;
             document.getElementById('weekSelect').value = currentWeek;
-            
-            // Highlight completed days and select the suggested day
-            updateDayButtons();
-            selectDay(currentDay);
-            
-            // Build status message
+            updateDayButtons(); selectDay(currentDay);
             let msg = '';
-            if (statusData.previousWeekComplete) {
-                msg = `✅ Week ${statusData.previousWeek} complete! Starting Week ${statusData.week}.`;
-            } else if (statusData.daysCompleted.length > 0) {
-                msg = `Week ${statusData.week}: Days ${statusData.daysCompleted.join(', ')} done. Suggesting Day ${statusData.nextDay}.`;
-            } else {
-                msg = `Starting Week ${statusData.week}, Day ${statusData.nextDay}.`;
-            }
+            if (statusData.previousWeekComplete) msg = `✅ Week ${statusData.previousWeek} complete! Starting Week ${statusData.week}.`;
+            else if (statusData.daysCompleted.length > 0) msg = `Week ${statusData.week}: Days ${statusData.daysCompleted.join(', ')} done. Suggesting Day ${statusData.nextDay}.`;
+            else msg = `Starting Week ${statusData.week}, Day ${statusData.nextDay}.`;
             document.getElementById('statusMessage').textContent = msg;
-            
-            // Update header
             document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay}`;
-            
-            // Listen for week changes
             document.getElementById('weekSelect').addEventListener('change', onWeekChange);
-            
-            // Hide loading, show confirmation
             document.getElementById('loadingScreen').classList.add('hidden');
             document.getElementById('confirmationModal').classList.remove('hidden');
         }
-
         function selectDay(day) {
             currentDay = day;
-            // Update button styles
-            document.querySelectorAll('.day-select-btn').forEach(btn => {
-                const btnDay = parseInt(btn.getAttribute('data-day'));
-                if (btnDay === day) {
-                    btn.style.background = '#667eea';
-                    btn.style.color = 'white';
-                } else {
-                    btn.style.background = 'white';
-                    btn.style.color = '#667eea';
-                }
+            document.querySelectorAll('.day-select-btn').forEach(b => {
+                const d = parseInt(b.getAttribute('data-day'));
+                b.style.background = d === day ? '#667eea' : 'white';
+                b.style.color = d === day ? 'white' : '#667eea';
             });
         }
-
         function updateDayButtons() {
-            const completed = statusData ? statusData.daysCompleted : [];
-            document.querySelectorAll('.day-select-btn').forEach(btn => {
-                const btnDay = parseInt(btn.getAttribute('data-day'));
-                if (completed.includes(btnDay)) {
-                    btn.textContent = `Day ${btnDay} ✓`;
-                } else {
-                    btn.textContent = `Day ${btnDay}`;
-                }
+            const c = statusData ? statusData.daysCompleted : [];
+            document.querySelectorAll('.day-select-btn').forEach(b => {
+                const d = parseInt(b.getAttribute('data-day'));
+                b.textContent = c.includes(d) ? `Day ${d} ✓` : `Day ${d}`;
             });
         }
-
-        async function onWeekChange() {
+        function onWeekChange() {
             currentWeek = parseInt(document.getElementById('weekSelect').value);
-            // When manually changing week, reset day selection to 1
-            // and clear completed indicators (we don't have status for other weeks without a new fetch)
-            statusData = { week: currentWeek, nextDay: 1, daysCompleted: [] };
-            updateDayButtons();
-            selectDay(1);
+            statusData = { week:currentWeek, nextDay:1, daysCompleted:[] };
+            updateDayButtons(); selectDay(1);
             document.getElementById('statusMessage').textContent = `Selected Week ${currentWeek}. Pick a day to begin.`;
         }
-
         async function confirmWorkout() {
             showLoading();
-            
-            // Fetch the actual workout data for selected week + day
             workoutData = await fetchWorkoutData(currentDay, currentWeek);
-            
-            if (!workoutData || workoutData.error) {
-                hideLoading();
-                if (workoutData && workoutData.error) {
-                    showError(workoutData.error);
-                }
-                return;
-            }
-            
-            // Reset state for new workout
-            currentStep = 0;
-            currentExerciseIndex = 0;
-            currentSetIndex = 0;
-            workoutLog = [];
-            exerciseNotes = {};
-            
+            if (!workoutData || workoutData.error) { hideLoading(); if (workoutData?.error) showError(workoutData.error); return; }
+            currentStep = 0; currentExerciseIndex = 0; currentSetIndex = 0;
+            workoutLog = []; exerciseNotes = {};
             document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
             document.getElementById('confirmationModal').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
-            
-            hideLoading();
-            renderWarmup();
-            updateProgress();
+            hideLoading(); renderWarmup(); updateProgress();
         }
+        function showLoading() { document.getElementById('loadingScreen').classList.remove('hidden'); }
+        function hideLoading() { document.getElementById('loadingScreen').classList.add('hidden'); }
 
-        function showLoading() {
-            document.getElementById('loadingScreen').classList.remove('hidden');
-        }
-
-        function hideLoading() {
-            document.getElementById('loadingScreen').classList.add('hidden');
-        }
-
-        // ============================================================
-        // Video toggle
-        // ============================================================
+        // === Video toggle ===
         function toggleVideo(id) {
-            const videoContainer = document.getElementById('video-' + id);
-            const button = document.getElementById('btn-' + id);
-            
-            if (videoContainer.classList.contains('show')) {
-                videoContainer.classList.remove('show');
-                button.innerHTML = '▶️ Video';
-                openVideoId = null;
-            } else {
-                if (openVideoId !== null) {
-                    const prevContainer = document.getElementById('video-' + openVideoId);
-                    const prevButton = document.getElementById('btn-' + openVideoId);
-                    if (prevContainer) {
-                        prevContainer.classList.remove('show');
-                        prevButton.innerHTML = '▶️ Video';
-                    }
-                }
-                
-                videoContainer.classList.add('show');
-                button.innerHTML = '✕ Close';
-                openVideoId = id;
+            const vc = document.getElementById('video-' + id), btn = document.getElementById('btn-' + id);
+            if (vc.classList.contains('show')) { vc.classList.remove('show'); btn.innerHTML = '▶️ Video'; openVideoId = null; }
+            else {
+                if (openVideoId !== null) { const p = document.getElementById('video-'+openVideoId), pb = document.getElementById('btn-'+openVideoId); if(p){p.classList.remove('show'); pb.innerHTML='▶️ Video';} }
+                vc.classList.add('show'); btn.innerHTML = '✕ Close'; openVideoId = id;
             }
         }
 
-        // ============================================================
-        // Warmup rendering
-        // ============================================================
-        function renderWarmup() {
-            const section = document.getElementById('warmupSection');
-            
-            const renderWarmupSection = (items, title) => {
-                if (items.length === 0) return '';
-                
-                const itemsHTML = items.map((item, index) => `
-                    <div class="warmup-item">
-                        <div class="name">
-                            <span class="name-text">${item.name}</span>
-                            ${item.videoUrl ? `<button class="video-toggle" id="btn-${title}-${index}" onclick="toggleVideo('${title}-${index}')">▶️ Video</button>` : ''}
-                        </div>
-                        <div class="details">${item.details}</div>
-                        ${item.videoUrl ? `
-                            <div class="video-container" id="video-${title}-${index}">
-                                <div class="video-error">Watch form video:</div>
-                                <a href="${item.videoUrl}" target="_blank" class="video-link">🎥 Watch on YouTube</a>
-                            </div>
-                        ` : ''}
-                    </div>
-                `).join('');
-                
-                return `
-                    <div class="section-title warmup-section-divider">🔥 ${title}</div>
-                    ${itemsHTML}
-                `;
-            };
-            
-            const upperHTML = renderWarmupSection(workoutData.warmup.upper, 'Upper Warmup');
-            const lowerHTML = renderWarmupSection(workoutData.warmup.lower, 'Lower Warmup');
-            
-            section.innerHTML = upperHTML + lowerHTML;
+        // === Rest Timer ===
+        function startRestTimer() {
+            stopRestTimer(); restTimerStart = Date.now();
+            restTimerInterval = setInterval(updateRestTimerDisplay, 1000);
+        }
+        function stopRestTimer() { if (restTimerInterval) { clearInterval(restTimerInterval); restTimerInterval = null; } restTimerStart = null; }
+        function updateRestTimerDisplay() {
+            const el = document.getElementById('restTimer');
+            if (!el || !restTimerStart) return;
+            const elapsed = Math.floor((Date.now() - restTimerStart) / 1000);
+            const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
+            el.querySelector('.rest-timer-time').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            if (elapsed >= REST_THRESHOLD) { el.classList.add('ready'); el.querySelector('.rest-timer-icon').textContent = '✅'; }
         }
 
-        // ============================================================
-        // Exercise rendering
-        // ============================================================
-        let exerciseNotes = {}; // Store notes per exercise index
-        
+        // === Warmup ===
+        function renderWarmup() {
+            const s = document.getElementById('warmupSection');
+            const renderSection = (items, title) => {
+                if (!items.length) return '';
+                return `<div class="section-title warmup-section-divider">🔥 ${title}</div>` +
+                    items.map((item, i) => `
+                        <div class="warmup-item">
+                            <div class="name"><span class="name-text">${item.name}</span>
+                                ${item.videoUrl ? `<button class="video-toggle" id="btn-${title}-${i}" onclick="toggleVideo('${title}-${i}')">▶️ Video</button>` : ''}
+                            </div>
+                            <div class="details">${item.details}</div>
+                            ${item.videoUrl ? `<div class="video-container" id="video-${title}-${i}"><div class="video-error">Watch form video:</div><a href="${item.videoUrl}" target="_blank" class="video-link">🎥 Watch on YouTube</a></div>` : ''}
+                        </div>`).join('');
+            };
+            s.innerHTML = renderSection(workoutData.warmup.upper, 'Upper Warmup') + renderSection(workoutData.warmup.lower, 'Lower Warmup');
+        }
+
+        // === Workout Preview ===
+        function renderPreview() {
+            document.getElementById('previewSection').innerHTML = `
+                <div class="section-title">📋 Today's Exercises</div>
+                ${workoutData.exercises.map(ex => `
+                    <div class="preview-item">
+                        <div class="preview-item-info">
+                            <div class="preview-item-name">${ex.name}</div>
+                            <div class="preview-item-detail">${ex.sets} sets × ${ex.reps}${ex.rir ? ' • ' + ex.rir : ''}</div>
+                        </div>
+                        ${ex.videoUrl ? `<a href="${ex.videoUrl}" target="_blank" class="preview-video-btn">🎥 Video</a>` : ''}
+                    </div>`).join('')}`;
+        }
+
+        // === Exercise Rendering ===
         async function renderExercise(exerciseIndex, setIndex) {
             const exercise = workoutData.exercises[exerciseIndex];
             const section = document.getElementById('exerciseSection');
-            
-            // Initialize workoutLog for this exercise if not exists
-            if (!workoutLog[exerciseIndex]) {
-                workoutLog[exerciseIndex] = Array(exercise.maxSets).fill(null).map(() => ({ weight: '', reps: '', rpe: '' }));
-            }
+            if (!workoutLog[exerciseIndex]) workoutLog[exerciseIndex] = Array(exercise.maxSets).fill(null).map(() => ({ weight:'', reps:'', rpe:'' }));
 
-            // Fetch last workout data (with source info and note)
-            const lastWorkoutResult = await fetchLastWorkout(currentDay, exercise.name, currentWeek);
-            const lastWorkoutData = lastWorkoutResult.sets || [];
-            const lastWorkoutSource = lastWorkoutResult.source || 'No previous data';
-            const lastWorkoutNote = lastWorkoutResult.note || '';
-            
-            const lastWorkoutHTML = lastWorkoutData.length > 0 
-                ? lastWorkoutData.map((set, i) => `
-                    <div class="previous-set">Set ${i + 1}: ${set.weight} × ${set.reps} reps @ RPE ${set.rpe}</div>
-                  `).join('')
-                : Array(exercise.sets).fill(0).map((_, i) => `
-                    <div class="previous-set">Set ${i + 1}: No previous data</div>
-                  `).join('');
-            
-            const lastNoteHTML = lastWorkoutNote 
-                ? `<div class="previous-note">📝 ${lastWorkoutNote}</div>` 
-                : '';
+            const lastResult = await fetchLastWorkout(currentDay, exercise.name, currentWeek);
+            const lastSets = lastResult.sets || [], lastSource = lastResult.source || 'No previous data', lastNote = lastResult.note || '';
 
-            // Create dots for set navigation
-            const dotsHTML = Array.from({length: exercise.maxSets}, (_, i) => {
-                let dotClass = 'dot';
-                if (i === setIndex) dotClass += ' active';
-                else if (workoutLog[exerciseIndex][i].weight || workoutLog[exerciseIndex][i].reps) dotClass += ' filled';
-                return `<div class="${dotClass}"></div>`;
+            const lastHTML = lastSets.length > 0
+                ? lastSets.map((s, i) => `<div class="previous-set">Set ${i+1}: ${s.weight} × ${s.reps} reps @ RPE ${s.rpe}</div>`).join('')
+                : Array(exercise.sets).fill(0).map((_, i) => `<div class="previous-set">Set ${i+1}: No previous data</div>`).join('');
+            const lastNoteHTML = lastNote ? `<div class="previous-note">📝 ${lastNote}</div>` : '';
+
+            const dots = Array.from({length: exercise.maxSets}, (_, i) => {
+                let c = 'dot';
+                if (i === setIndex) c += ' active';
+                else if (workoutLog[exerciseIndex][i].weight || workoutLog[exerciseIndex][i].reps) c += ' filled';
+                return `<div class="${c}"></div>`;
             }).join('');
 
-            const currentData = workoutLog[exerciseIndex][setIndex];
-            const isStairmaster = exercise.name.toLowerCase().indexOf('stairmaster') !== -1;
-            const isLastSet = setIndex === exercise.maxSets - 1;
-            const currentNote = exerciseNotes[exerciseIndex] || '';
+            const cur = workoutLog[exerciseIndex][setIndex];
+            const isSM = exercise.name.toLowerCase().includes('stairmaster');
+            const isLast = setIndex === exercise.maxSets - 1;
+            const curNote = exerciseNotes[exerciseIndex] || '';
+            const showTimer = setIndex > 0;
 
             section.innerHTML = `
                 <div class="exercise-card">
@@ -965,283 +454,158 @@
                         </div>
                         ${exercise.notes ? `<div class="notes">💡 ${exercise.notes}</div>` : ''}
                     </div>
-
-                    ${exercise.videoUrl ? `
-                        <div class="exercise-video-container video-container" id="video-exercise-${exerciseIndex}">
-                            <div class="video-error">Watch form video:</div>
-                            <a href="${exercise.videoUrl}" target="_blank" class="video-link">🎥 Watch on YouTube</a>
-                        </div>
-                    ` : ''}
-
+                    ${exercise.videoUrl ? `<div class="exercise-video-container video-container" id="video-exercise-${exerciseIndex}"><div class="video-error">Watch form video:</div><a href="${exercise.videoUrl}" target="_blank" class="video-link">🎥 Watch on YouTube</a></div>` : ''}
                     <div class="last-workout">
-                        <div class="last-workout-title">Previous Workout (${lastWorkoutSource})</div>
-                        <div class="previous-sets">
-                            ${lastWorkoutHTML}
-                        </div>
+                        <div class="last-workout-title">Previous Workout (${lastSource})</div>
+                        <div class="previous-sets">${lastHTML}</div>
                         ${lastNoteHTML}
                     </div>
-
                     <div class="sets-container">
                         <div class="set-navigation">
-                            <button class="set-nav-btn" onclick="previousSet()" ${setIndex === 0 ? 'disabled' : ''}>← Prev Set</button>
-                            <div class="set-indicator">Set ${setIndex + 1} of ${exercise.maxSets}</div>
-                            <button class="set-nav-btn" onclick="nextSet()" ${setIndex === exercise.maxSets - 1 ? 'disabled' : ''}>Next Set →</button>
+                            <button class="set-nav-btn" onclick="previousSet()" ${setIndex===0?'disabled':''}>← Prev Set</button>
+                            <div class="set-indicator">Set ${setIndex+1} of ${exercise.maxSets}</div>
+                            <button class="set-nav-btn" onclick="nextSet()" ${setIndex===exercise.maxSets-1?'disabled':''}>Next Set →</button>
                         </div>
-
+                        ${showTimer ? `<div class="rest-timer" id="restTimer"><span class="rest-timer-icon">⏱️</span><span>Rest: <span class="rest-timer-time">0:00</span></span></div>` : ''}
                         <div class="set-input-card">
-                            ${!isStairmaster ? `
+                            ${!isSM ? `
                                 <div class="input-group">
                                     <label>Weight</label>
-                                    <input type="text" inputmode="decimal" placeholder="e.g. 135 or Orange band" id="weightInput" value="${currentData.weight}">
+                                    <input type="text" inputmode="numeric" placeholder="e.g. 135 or Orange band" id="weightInput" value="${cur.weight}">
                                 </div>
                                 <div class="input-group">
                                     <label>Reps</label>
-                                    <input type="number" placeholder="0" id="repsInput" value="${currentData.reps}">
+                                    <input type="number" inputmode="decimal" placeholder="0" id="repsInput" value="${cur.reps}">
                                 </div>
                                 <div class="input-group">
                                     <label>RPE (Rate of Perceived Exertion)</label>
-                                    <input type="number" step="0.5" max="10" min="0" placeholder="0" id="rpeInput" value="${currentData.rpe}">
+                                    <input type="number" inputmode="decimal" step="0.5" max="10" min="0" placeholder="0" id="rpeInput" value="${cur.rpe}">
                                 </div>
                             ` : `
                                 <div class="input-group">
                                     <label>Duration (minutes)</label>
-                                    <input type="number" placeholder="20" id="repsInput" value="${currentData.reps}">
+                                    <input type="number" inputmode="decimal" placeholder="20" id="repsInput" value="${cur.reps}">
                                 </div>
                                 <div class="input-group">
                                     <label>Average Level</label>
-                                    <input type="number" step="1" placeholder="7" id="rpeInput" value="${currentData.rpe}">
+                                    <input type="number" inputmode="decimal" step="1" placeholder="7" id="rpeInput" value="${cur.rpe}">
                                 </div>
                             `}
                         </div>
-
-                        ${isLastSet ? `
-                            <div class="note-input-section">
-                                <label class="note-label">📝 Note for next week (optional)</label>
-                                <textarea id="exerciseNoteInput" class="note-textarea" placeholder="e.g. Increase weight next week, per leg weight, felt easy...">${currentNote}</textarea>
-                            </div>
-                        ` : ''}
-
-                        <div class="set-dots">
-                            ${dotsHTML}
-                        </div>
+                        ${isLast ? `<div class="note-input-section"><label class="note-label">📝 Note for next week (optional)</label><textarea id="exerciseNoteInput" class="note-textarea" placeholder="e.g. Increase weight next week, per leg weight, felt easy...">${curNote}</textarea></div>` : ''}
+                        <div class="set-dots">${dots}</div>
                     </div>
-                </div>
-            `;
+                </div>`;
+
+            if (showTimer) startRestTimer(); else stopRestTimer();
         }
 
-        // ============================================================
-        // Navigation
-        // ============================================================
+        // === Navigation ===
         async function nextStep() {
             if (currentStep === 0) {
-                // Moving from warmup to first exercise
                 document.getElementById('warmupSection').classList.add('hidden');
+                document.getElementById('previewSection').classList.remove('hidden');
+                renderPreview(); currentStep = 1;
+            } else if (currentStep === 1) {
+                document.getElementById('previewSection').classList.add('hidden');
                 document.getElementById('exerciseSection').classList.remove('hidden');
-                currentExerciseIndex = 0;
-                currentSetIndex = 0;
-                await renderExercise(currentExerciseIndex, currentSetIndex);
-                currentStep = 1;
+                currentExerciseIndex = 0; currentSetIndex = 0;
+                await renderExercise(0, 0); currentStep = 2;
             } else {
-                // Save current set data to Google Sheets immediately
-                showLoading();
-                const success = await saveCurrentSetToSheet();
-                hideLoading();
-                
-                if (!success) {
-                    alert('⚠️ Failed to save set data. Please check your connection and try again.');
-                    return;
-                }
-                
-                const exercise = workoutData.exercises[currentExerciseIndex];
-                
-                if (currentSetIndex < exercise.maxSets - 1) {
-                    currentSetIndex++;
-                    await renderExercise(currentExerciseIndex, currentSetIndex);
-                } else if (currentExerciseIndex < workoutData.exercises.length - 1) {
-                    currentExerciseIndex++;
-                    currentSetIndex = 0;
-                    await renderExercise(currentExerciseIndex, currentSetIndex);
-                } else {
-                    completeWorkout();
-                    return;
-                }
+                showLoading(); const ok = await saveCurrentSetToSheet(); hideLoading();
+                if (!ok) { alert('⚠️ Failed to save. Check connection.'); return; }
+                const ex = workoutData.exercises[currentExerciseIndex];
+                if (currentSetIndex < ex.maxSets - 1) { currentSetIndex++; await renderExercise(currentExerciseIndex, currentSetIndex); }
+                else if (currentExerciseIndex < workoutData.exercises.length - 1) { currentExerciseIndex++; currentSetIndex = 0; await renderExercise(currentExerciseIndex, currentSetIndex); }
+                else { completeWorkout(); return; }
                 currentStep++;
             }
-            updateProgress();
-            updateButtons();
+            updateProgress(); updateButtons();
         }
-
         function previousStep() {
-            if (currentStep === 1 && currentSetIndex === 0) {
-                document.getElementById('exerciseSection').classList.add('hidden');
+            if (currentStep === 1) {
+                document.getElementById('previewSection').classList.add('hidden');
                 document.getElementById('warmupSection').classList.remove('hidden');
-                currentStep = 0;
+                stopRestTimer(); currentStep = 0;
+            } else if (currentStep === 2 && currentSetIndex === 0) {
+                document.getElementById('exerciseSection').classList.add('hidden');
+                document.getElementById('previewSection').classList.remove('hidden');
+                stopRestTimer(); currentStep = 1;
             } else if (currentSetIndex > 0) {
-                currentSetIndex--;
-                renderExercise(currentExerciseIndex, currentSetIndex);
-                currentStep--;
+                currentSetIndex--; renderExercise(currentExerciseIndex, currentSetIndex); currentStep--;
             } else if (currentExerciseIndex > 0) {
-                currentExerciseIndex--;
-                const prevExercise = workoutData.exercises[currentExerciseIndex];
-                currentSetIndex = prevExercise.maxSets - 1;
-                renderExercise(currentExerciseIndex, currentSetIndex);
-                currentStep--;
+                currentExerciseIndex--; currentSetIndex = workoutData.exercises[currentExerciseIndex].maxSets - 1;
+                renderExercise(currentExerciseIndex, currentSetIndex); currentStep--;
             }
-            updateProgress();
-            updateButtons();
+            updateProgress(); updateButtons();
         }
-
         async function nextSet() {
-            showLoading();
-            const success = await saveCurrentSetToSheet();
-            hideLoading();
-            
-            if (!success) {
-                alert('⚠️ Failed to save set data. Please check your connection and try again.');
-                return;
-            }
-            
-            const exercise = workoutData.exercises[currentExerciseIndex];
-            if (currentSetIndex < exercise.maxSets - 1) {
-                currentSetIndex++;
-                await renderExercise(currentExerciseIndex, currentSetIndex);
-            }
+            showLoading(); const ok = await saveCurrentSetToSheet(); hideLoading();
+            if (!ok) { alert('⚠️ Failed to save. Check connection.'); return; }
+            const ex = workoutData.exercises[currentExerciseIndex];
+            if (currentSetIndex < ex.maxSets - 1) { currentSetIndex++; await renderExercise(currentExerciseIndex, currentSetIndex); }
         }
-
         function previousSet() {
-            saveCurrentSet(); // save locally only when going back
-            if (currentSetIndex > 0) {
-                currentSetIndex--;
-                renderExercise(currentExerciseIndex, currentSetIndex);
-            }
-        }
-
-        // ============================================================
-        // Saving
-        // ============================================================
-        function saveCurrentSet() {
-            const weight = document.getElementById('weightInput')?.value || '';
-            const reps = document.getElementById('repsInput')?.value || '';
-            const rpe = document.getElementById('rpeInput')?.value || '';
-            
-            if (!workoutLog[currentExerciseIndex]) {
-                workoutLog[currentExerciseIndex] = [];
-            }
-            
-            workoutLog[currentExerciseIndex][currentSetIndex] = { weight, reps, rpe };
-            
-            // Also capture the note if we're on the last set
-            const noteInput = document.getElementById('exerciseNoteInput');
-            if (noteInput) {
-                exerciseNotes[currentExerciseIndex] = noteInput.value;
-            }
-        }
-
-        async function saveCurrentSetToSheet() {
-            // First save to local memory
             saveCurrentSet();
-            
-            // Then save to Google Sheets
-            const currentData = workoutLog[currentExerciseIndex][currentSetIndex];
-            const exercise = workoutData.exercises[currentExerciseIndex];
-            
-            // Only save set if there's actual data
-            if (currentData.weight || currentData.reps || currentData.rpe) {
-                const success = await saveSet(
-                    exercise.name,
-                    currentSetIndex + 1,
-                    currentData.weight,
-                    currentData.reps,
-                    currentData.rpe
-                );
-                if (!success) return false;
+            if (currentSetIndex > 0) { currentSetIndex--; renderExercise(currentExerciseIndex, currentSetIndex); }
+        }
+
+        // === Saving ===
+        function saveCurrentSet() {
+            const w = document.getElementById('weightInput')?.value || '';
+            const r = document.getElementById('repsInput')?.value || '';
+            const p = document.getElementById('rpeInput')?.value || '';
+            if (!workoutLog[currentExerciseIndex]) workoutLog[currentExerciseIndex] = [];
+            workoutLog[currentExerciseIndex][currentSetIndex] = { weight: w, reps: r, rpe: p };
+            const n = document.getElementById('exerciseNoteInput');
+            if (n) exerciseNotes[currentExerciseIndex] = n.value;
+        }
+        async function saveCurrentSetToSheet() {
+            saveCurrentSet();
+            const cur = workoutLog[currentExerciseIndex][currentSetIndex];
+            const ex = workoutData.exercises[currentExerciseIndex];
+            if (cur.weight || cur.reps || cur.rpe) {
+                const ok = await saveSet(ex.name, currentSetIndex + 1, cur.weight, cur.reps, cur.rpe);
+                if (!ok) return false;
             }
-            
-            // Save note if we're on the last set and there's a note
-            const isLastSet = currentSetIndex === exercise.maxSets - 1;
-            if (isLastSet && exerciseNotes[currentExerciseIndex]) {
-                await saveNoteToSheet(exercise.name, exerciseNotes[currentExerciseIndex]);
+            if (currentSetIndex === ex.maxSets - 1 && exerciseNotes[currentExerciseIndex]) {
+                await saveNoteToSheet(ex.name, exerciseNotes[currentExerciseIndex]);
             }
-            
             return true;
         }
 
-        async function saveNoteToSheet(exerciseName, note) {
-            try {
-                const params = new URLSearchParams({
-                    action: 'saveNote',
-                    week: currentWeek,
-                    day: currentDay,
-                    exercise: exerciseName,
-                    note: note
-                });
-                const response = await fetch(`${API_URL}?${params.toString()}`);
-                const data = await response.json();
-                return data.success;
-            } catch (error) {
-                console.error('Error saving note:', error);
-                return false;
-            }
-        }
-
-        // ============================================================
-        // Progress & buttons
-        // ============================================================
+        // === Progress ===
         function updateProgress() {
-            const totalSteps = workoutData.exercises.reduce((sum, ex) => sum + ex.maxSets, 0) + 1;
-            const progress = (currentStep / totalSteps) * 100;
-            document.getElementById('progressBar').style.width = progress + '%';
+            const total = workoutData.exercises.reduce((s, e) => s + e.maxSets, 0) + 2;
+            document.getElementById('progressBar').style.width = (currentStep / total * 100) + '%';
         }
-
         function updateButtons() {
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            
-            prevBtn.disabled = currentStep === 0;
-            
-            const isLastExercise = currentExerciseIndex === workoutData.exercises.length - 1;
-            const isLastSet = currentSetIndex === workoutData.exercises[currentExerciseIndex].maxSets - 1;
-            
-            if (currentStep > 0 && isLastExercise && isLastSet) {
-                nextBtn.textContent = 'Complete Workout';
-                nextBtn.classList.add('complete-btn');
-            } else {
-                nextBtn.textContent = 'Next';
-                nextBtn.classList.remove('complete-btn');
-            }
+            document.getElementById('prevBtn').disabled = currentStep === 0;
+            const next = document.getElementById('nextBtn');
+            if (currentStep < 2) { next.textContent = 'Next'; next.classList.remove('complete-btn'); return; }
+            const last = currentExerciseIndex === workoutData.exercises.length - 1 && currentSetIndex === workoutData.exercises[currentExerciseIndex].maxSets - 1;
+            next.textContent = last ? 'Complete Workout' : 'Next';
+            next.classList.toggle('complete-btn', last);
         }
 
-        // ============================================================
-        // Completion
-        // ============================================================
+        // === Complete ===
         async function completeWorkout() {
-            showLoading();
-            await saveCurrentSetToSheet();
-            hideLoading();
-            
+            showLoading(); await saveCurrentSetToSheet(); stopRestTimer(); hideLoading();
             let summary = `Day ${currentDay} - ${workoutData.type} Complete! 🎉\n\n`;
-            workoutData.exercises.forEach((exercise, i) => {
-                summary += `${exercise.name}:\n`;
-                if (workoutLog[i]) {
-                    workoutLog[i].forEach((set, j) => {
-                        if (set && (set.weight || set.reps || set.rpe)) {
-                            const isStairmaster = exercise.name.toLowerCase().indexOf('stairmaster') !== -1;
-                            if (isStairmaster) {
-                                summary += `  ${set.reps} minutes @ level ${set.rpe}\n`;
-                            } else {
-                                summary += `  Set ${j + 1}: ${set.weight}lbs × ${set.reps} reps @ RPE ${set.rpe}\n`;
-                            }
-                        }
-                    });
-                }
+            workoutData.exercises.forEach((ex, i) => {
+                summary += `${ex.name}:\n`;
+                if (workoutLog[i]) workoutLog[i].forEach((s, j) => {
+                    if (s && (s.weight || s.reps || s.rpe)) {
+                        if (ex.name.toLowerCase().includes('stairmaster')) summary += `  ${s.reps} min @ level ${s.rpe}\n`;
+                        else summary += `  Set ${j+1}: ${s.weight} × ${s.reps} reps @ RPE ${s.rpe}\n`;
+                    }
+                });
                 summary += '\n';
             });
-            
             alert(summary + '\nAll data saved to Google Sheets! 💪');
             location.reload();
         }
 
-        // Initialize app on load
         initializeApp();
     </script>
 </body>
