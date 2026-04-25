@@ -255,6 +255,7 @@
                     <select id="weekSelect" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; font-weight:600; background:white;">
                         <option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option>
                         <option value="5">Week 5</option><option value="6">Week 6</option><option value="7">Week 7</option><option value="8">Week 8</option>
+                        <option value="9">Week 9</option><option value="10">Week 10</option><option value="11">Week 11</option><option value="12">Week 12</option>
                     </select>
                 </div>
                 <div style="margin-bottom: 20px;">
@@ -272,12 +273,11 @@
 
         <div class="header">
             <h1>Workout Tracker</h1>
-            <div class="workout-info" id="headerInfo">Week 1 • Day 1 • Upper</div>
+            <div class="workout-info" id="headerInfo">Week 1 • Day 1</div>
             <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width: 0%"></div></div>
         </div>
 
         <div id="mainContent" class="hidden">
-            <div id="warmupSection" class="section"></div>
             <div id="previewSection" class="section hidden"></div>
             <div id="pickerSection" class="section hidden"></div>
             <div id="exerciseSection" class="section hidden"></div>
@@ -289,10 +289,10 @@
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwtxXz8agZO1Sp3if4Aub1CImIDl14RjpFug3vM2yzN0tckDxeuWDUAKVul7jJ9rZI/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyJmBl_oSBLea7JZCs4Nl0sw3So9zZIkDv9bwLx6ioRkHjtb-D-3LxUC6E1vDzDxa0m/exec';
 
         let currentDay = 1, currentWeek = 1, workoutData = null;
-        let currentStep = 0; // 0=warmup, 1=preview, 2+=exercises
+        let currentStep = 0; // 0=preview, 1+=picker/exercises
         let currentExerciseIndex = 0, currentSetIndex = 0;
         let workoutLog = [], exerciseNotes = {}, openVideoId = null;
         let restTimerInterval = null, restTimerStart = null;
@@ -311,18 +311,20 @@
             catch(e) { return { week:1, nextDay:1, daysCompleted:[] }; }
         }
         async function fetchLastWorkout(day, name, week) {
+            // name is used for cross-week lookup; prev-week data lives in different rows
             try { const r = await fetch(`${API_URL}?action=getLastWorkout&day=${day}&exercise=${encodeURIComponent(name)}&week=${week}`); return await r.json(); }
             catch(e) { return { sets:[], source:null, note:'' }; }
         }
-        async function saveSet(name, setNum, weight, reps, rpe) {
+        async function saveSet(name, row, setNum, weight, reps, rpe) {
+            // row is the stable identity for this week's save (handles duplicate-name exercises)
             try {
-                const p = new URLSearchParams({ action:'saveSet', week:currentWeek, day:currentDay, exercise:name, set:setNum, weight, reps, rpe });
+                const p = new URLSearchParams({ action:'saveSet', week:currentWeek, day:currentDay, exercise:name, row, set:setNum, weight, reps, rpe });
                 const r = await fetch(`${API_URL}?${p}`); return (await r.json()).success;
             } catch(e) { return false; }
         }
-        async function saveNoteToSheet(name, note) {
+        async function saveNoteToSheet(name, row, note) {
             try {
-                const p = new URLSearchParams({ action:'saveNote', week:currentWeek, day:currentDay, exercise:name, note });
+                const p = new URLSearchParams({ action:'saveNote', week:currentWeek, day:currentDay, exercise:name, row, note });
                 const r = await fetch(`${API_URL}?${p}`); return (await r.json()).success;
             } catch(e) { return false; }
         }
@@ -375,10 +377,14 @@
             currentStep = 0; currentExerciseIndex = 0; currentSetIndex = 0;
             workoutLog = []; exerciseNotes = {};
             completedExercises = new Set(); showingPicker = false;
-            document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay} • ${workoutData.type}`;
+            document.getElementById('headerInfo').textContent = `Week ${currentWeek} • Day ${currentDay}`;
             document.getElementById('confirmationModal').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
-            hideLoading(); renderWarmup(); updateProgress();
+            // No warmup step — priming rows (P1-P4) live in the exercise list now.
+            // Start at step 0 = preview.
+            document.getElementById('previewSection').classList.remove('hidden');
+            renderPreview();
+            hideLoading(); updateProgress();
         }
         function showLoading() { document.getElementById('loadingScreen').classList.remove('hidden'); }
         function hideLoading() { document.getElementById('loadingScreen').classList.add('hidden'); }
@@ -408,23 +414,8 @@
             if (elapsed >= REST_THRESHOLD) { el.classList.add('ready'); el.querySelector('.rest-timer-icon').textContent = '✅'; }
         }
 
-        // === Warmup ===
-        function renderWarmup() {
-            const s = document.getElementById('warmupSection');
-            const renderSection = (items, title) => {
-                if (!items.length) return '';
-                return `<div class="section-title warmup-section-divider">🔥 ${title}</div>` +
-                    items.map((item, i) => `
-                        <div class="warmup-item">
-                            <div class="name"><span class="name-text">${item.name}</span>
-                                ${item.videoUrl ? `<button class="video-toggle" id="btn-${title}-${i}" onclick="toggleVideo('${title}-${i}')">▶️ Video</button>` : ''}
-                            </div>
-                            <div class="details">${item.details}</div>
-                            ${item.videoUrl ? `<div class="video-container" id="video-${title}-${i}"><div class="video-error">Watch form video:</div><a href="${item.videoUrl}" target="_blank" class="video-link">🎥 Watch on YouTube</a></div>` : ''}
-                        </div>`).join('');
-            };
-            s.innerHTML = renderSection(workoutData.warmup.upper, 'Upper Warmup') + renderSection(workoutData.warmup.lower, 'Lower Warmup');
-        }
+        // (Warmup section removed — priming exercises P1-P4 now render as regular
+        //  exercises in the workout list, so no separate warmup screen is needed.)
 
         // === Workout Preview ===
         function renderPreview() {
@@ -434,7 +425,7 @@
                     <div class="preview-item">
                         <div class="preview-item-info">
                             <div class="preview-item-name">${ex.name}</div>
-                            <div class="preview-item-detail">${ex.sets} sets × ${ex.reps}${ex.rir ? ' • ' + ex.rir : ''}</div>
+                            <div class="preview-item-detail">${ex.sets} sets × ${ex.reps}${ex.intensity ? ' • ' + ex.intensity : ''}</div>
                         </div>
                         ${ex.videoUrl ? `<a href="${ex.videoUrl}" target="_blank" class="preview-video-btn">🎥 Video</a>` : ''}
                     </div>`).join('')}`;
@@ -448,14 +439,10 @@
 
             const lastResult = await fetchLastWorkout(currentDay, exercise.name, currentWeek);
             const lastSets = lastResult.sets || [], lastSource = lastResult.source || 'No previous data', lastNote = lastResult.note || '';
-            const isSM = exercise.name.toLowerCase().includes('stairmaster');
 
             const lastHTML = lastSets.length > 0
-                ? lastSets.map((s, i) => {
-                    if (isSM) return `<div class="previous-set">Seg ${i+1}: ${s.reps} min @ level ${s.rpe}</div>`;
-                    return `<div class="previous-set">Set ${i+1}: ${s.weight} × ${s.reps} reps @ RPE ${s.rpe}</div>`;
-                  }).join('')
-                : Array(exercise.maxSets).fill(0).map((_, i) => `<div class="previous-set">${isSM?'Seg':'Set'} ${i+1}: No previous data</div>`).join('');
+                ? lastSets.map((s, i) => `<div class="previous-set">Set ${i+1}: ${s.weight} × ${s.reps} reps @ RPE ${s.rpe}</div>`).join('')
+                : Array(exercise.maxSets).fill(0).map((_, i) => `<div class="previous-set">Set ${i+1}: No previous data</div>`).join('');
             const lastNoteHTML = lastNote ? `<div class="previous-note">📝 ${lastNote}</div>` : '';
 
             const dots = Array.from({length: exercise.maxSets}, (_, i) => {
@@ -478,11 +465,11 @@
                             ${exercise.videoUrl ? `<button class="video-toggle" id="btn-exercise-${exerciseIndex}" onclick="toggleVideo('exercise-${exerciseIndex}')">▶️ Form</button>` : ''}
                         </div>
                         <div class="exercise-meta">
-                            <span class="meta-tag">${isSM ? exercise.reps : exercise.sets + ' sets'}</span>
-                            ${!isSM ? `<span class="meta-tag">${exercise.reps} reps</span>` : ''}
-                            ${exercise.rir ? `<span class="meta-tag">${exercise.rir}</span>` : ''}
+                            <span class="meta-tag">${exercise.sets} sets</span>
+                            <span class="meta-tag">${exercise.reps} reps</span>
+                            ${exercise.intensity ? `<span class="meta-tag">${exercise.intensity}</span>` : ''}
                         </div>
-                        ${exercise.notes ? `<div class="notes">💡 ${exercise.notes}</div>` : ''}
+                        ${exercise.cues ? `<div class="notes">💡 ${exercise.cues}</div>` : ''}
                     </div>
                     ${exercise.videoUrl ? `<div class="exercise-video-container video-container" id="video-exercise-${exerciseIndex}"><div class="video-error">Watch form video:</div><a href="${exercise.videoUrl}" target="_blank" class="video-link">🎥 Watch on YouTube</a></div>` : ''}
                     <div class="last-workout">
@@ -492,35 +479,24 @@
                     </div>
                     <div class="sets-container">
                         <div class="set-navigation">
-                            <button class="set-nav-btn" onclick="previousSet()" ${setIndex===0?'disabled':''}>← Prev ${isSM?'Seg':'Set'}</button>
-                            <div class="set-indicator">${isSM?'Segment':'Set'} ${setIndex+1} of ${exercise.maxSets}</div>
-                            <button class="set-nav-btn" onclick="nextSet()" ${setIndex===exercise.maxSets-1?'disabled':''}>Next ${isSM?'Seg':'Set'} →</button>
+                            <button class="set-nav-btn" onclick="previousSet()" ${setIndex===0?'disabled':''}>← Prev Set</button>
+                            <div class="set-indicator">Set ${setIndex+1} of ${exercise.maxSets}</div>
+                            <button class="set-nav-btn" onclick="nextSet()" ${setIndex===exercise.maxSets-1?'disabled':''}>Next Set →</button>
                         </div>
                         ${showTimer ? `<div class="rest-timer" id="restTimer"><span class="rest-timer-icon">⏱️</span><span>Rest: <span class="rest-timer-time">0:00</span></span></div>` : ''}
                         <div class="set-input-card">
-                            ${!isSM ? `
-                                <div class="input-group">
-                                    <label>Weight</label>
-                                    <input type="text" inputmode="numeric" placeholder="e.g. 135 or Orange band" id="weightInput" value="${cur.weight}">
-                                </div>
-                                <div class="input-group">
-                                    <label>Reps</label>
-                                    <input type="number" inputmode="decimal" placeholder="0" id="repsInput" value="${cur.reps}">
-                                </div>
-                                <div class="input-group">
-                                    <label>RPE (Rate of Perceived Exertion)</label>
-                                    <input type="number" inputmode="decimal" step="0.5" max="10" min="0" placeholder="0" id="rpeInput" value="${cur.rpe}">
-                                </div>
-                            ` : `
-                                <div class="input-group">
-                                    <label>Duration (minutes)</label>
-                                    <input type="number" inputmode="decimal" placeholder="5" id="repsInput" value="${cur.reps}">
-                                </div>
-                                <div class="input-group">
-                                    <label>Level</label>
-                                    <input type="number" inputmode="decimal" step="1" placeholder="7" id="rpeInput" value="${cur.rpe}">
-                                </div>
-                            `}
+                            <div class="input-group">
+                                <label>Weight</label>
+                                <input type="text" inputmode="decimal" placeholder="e.g. 135, 22.5, Orange band" id="weightInput" value="${cur.weight}">
+                            </div>
+                            <div class="input-group">
+                                <label>Reps</label>
+                                <input type="number" inputmode="decimal" placeholder="0" id="repsInput" value="${cur.reps}">
+                            </div>
+                            <div class="input-group">
+                                <label>RPE (Rate of Perceived Exertion)</label>
+                                <input type="number" inputmode="decimal" step="0.5" max="10" min="0" placeholder="0" id="rpeInput" value="${cur.rpe}">
+                            </div>
                         </div>
                         ${isLast ? `<div class="note-input-section"><label class="note-label">📝 Note for next week (optional)</label><textarea id="exerciseNoteInput" class="note-textarea" placeholder="e.g. Increase weight next week, per leg weight, felt easy...">${curNote}</textarea></div>` : ''}
                         <div class="set-dots">${dots}</div>
@@ -537,12 +513,11 @@
 
             const itemsHTML = workoutData.exercises.map((ex, i) => {
                 const done = completedExercises.has(i);
-                const isSM = ex.name.toLowerCase().includes('stairmaster');
                 return `
                     <div class="picker-item ${done ? 'completed' : 'incomplete'}" ${!done ? `onclick="selectExerciseFromPicker(${i})"` : ''}>
                         <div>
                             <div class="picker-item-name">${ex.name}</div>
-                            <div class="picker-item-detail">${isSM ? ex.reps : ex.sets + ' sets × ' + ex.reps}${ex.rir ? ' • ' + ex.rir : ''}</div>
+                            <div class="picker-item-detail">${ex.sets} sets × ${ex.reps}${ex.intensity ? ' • ' + ex.intensity : ''}</div>
                         </div>
                         <div class="picker-item-status">${done ? '✅' : '→'}</div>
                     </div>`;
@@ -562,25 +537,22 @@
             currentExerciseIndex = exerciseIndex;
             currentSetIndex = 0;
             await renderExercise(currentExerciseIndex, currentSetIndex);
-            currentStep = 2; // reset to exercise mode
+            currentStep = 1; // reset to exercise mode
             updateProgress(); updateButtons();
         }
 
         // === Navigation ===
+        // Step numbering: 0 = preview, 1+ = picker/exercises
         async function nextStep() {
             if (currentStep === 0) {
-                document.getElementById('warmupSection').classList.add('hidden');
-                document.getElementById('previewSection').classList.remove('hidden');
-                renderPreview(); currentStep = 1;
-            } else if (currentStep === 1) {
-                // Preview → Picker (start by choosing first exercise)
+                // Preview → Picker
                 document.getElementById('previewSection').classList.add('hidden');
                 document.getElementById('pickerSection').classList.remove('hidden');
                 showingPicker = true;
                 renderPicker();
-                currentStep = 2;
+                currentStep = 1;
             } else if (showingPicker) {
-                // Shouldn't normally hit this since picker uses onclick, but just in case
+                // Shouldn't hit this since picker uses onclick, but just in case
                 return;
             } else {
                 // In an exercise — save current set
@@ -589,22 +561,18 @@
                 const ex = workoutData.exercises[currentExerciseIndex];
 
                 if (currentSetIndex < ex.maxSets - 1) {
-                    // More sets to do in this exercise
                     currentSetIndex++;
                     await renderExercise(currentExerciseIndex, currentSetIndex);
                     currentStep++;
                 } else {
-                    // Last set of exercise — mark complete, show picker
                     completedExercises.add(currentExerciseIndex);
                     stopRestTimer();
 
-                    // Check if ALL exercises are done
                     if (completedExercises.size === workoutData.exercises.length) {
                         completeWorkout();
                         return;
                     }
 
-                    // Show picker
                     document.getElementById('exerciseSection').classList.add('hidden');
                     document.getElementById('pickerSection').classList.remove('hidden');
                     showingPicker = true;
@@ -614,25 +582,21 @@
             updateProgress(); updateButtons();
         }
         function previousStep() {
-            if (showingPicker && currentStep <= 2) {
-                // Picker → Preview (only if we haven't started any exercise yet)
+            if (showingPicker && currentStep <= 1) {
+                // Picker → Preview (only if no exercise has been started yet)
                 document.getElementById('pickerSection').classList.add('hidden');
                 document.getElementById('previewSection').classList.remove('hidden');
-                showingPicker = false; currentStep = 1;
+                showingPicker = false; currentStep = 0;
             } else if (showingPicker) {
-                // Picker → back to the last exercise we were on
+                // Picker → back to last exercise
                 document.getElementById('pickerSection').classList.add('hidden');
                 document.getElementById('exerciseSection').classList.remove('hidden');
                 showingPicker = false;
                 renderExercise(currentExerciseIndex, currentSetIndex);
-            } else if (currentStep === 1) {
-                document.getElementById('previewSection').classList.add('hidden');
-                document.getElementById('warmupSection').classList.remove('hidden');
-                stopRestTimer(); currentStep = 0;
             } else if (currentSetIndex > 0) {
                 currentSetIndex--; renderExercise(currentExerciseIndex, currentSetIndex); currentStep--;
             } else {
-                // First set of an exercise — go back to picker
+                // First set of an exercise — back to picker
                 document.getElementById('exerciseSection').classList.add('hidden');
                 document.getElementById('pickerSection').classList.remove('hidden');
                 showingPicker = true;
@@ -666,11 +630,11 @@
             const cur = workoutLog[currentExerciseIndex][currentSetIndex];
             const ex = workoutData.exercises[currentExerciseIndex];
             if (cur.weight || cur.reps || cur.rpe) {
-                const ok = await saveSet(ex.name, currentSetIndex + 1, cur.weight, cur.reps, cur.rpe);
+                const ok = await saveSet(ex.name, ex.sheetRow, currentSetIndex + 1, cur.weight, cur.reps, cur.rpe);
                 if (!ok) return false;
             }
             if (currentSetIndex === ex.maxSets - 1 && exerciseNotes[currentExerciseIndex]) {
-                await saveNoteToSheet(ex.name, exerciseNotes[currentExerciseIndex]);
+                await saveNoteToSheet(ex.name, ex.sheetRow, exerciseNotes[currentExerciseIndex]);
             }
             return true;
         }
@@ -678,11 +642,10 @@
         // === Progress ===
         function updateProgress() {
             const totalSets = workoutData.exercises.reduce((s, e) => s + e.maxSets, 0);
-            const total = totalSets + 2; // +warmup +preview
-            // Count completed sets across all completed exercises, plus current progress
-            let done = 2; // warmup + preview already done once we're in exercises
+            const total = totalSets + 1; // +preview
+            let done = 1; // preview already done once we're in exercises
             completedExercises.forEach(i => { done += workoutData.exercises[i].maxSets; });
-            if (!showingPicker && currentStep >= 2) done += currentSetIndex;
+            if (!showingPicker && currentStep >= 1) done += currentSetIndex;
             document.getElementById('progressBar').style.width = Math.min((done / total * 100), 100) + '%';
         }
         function updateButtons() {
@@ -690,13 +653,12 @@
             const next = document.getElementById('nextBtn');
 
             if (showingPicker) {
-                // Hide next button on picker — user taps an exercise instead
                 next.style.visibility = 'hidden';
                 return;
             }
             next.style.visibility = 'visible';
 
-            if (currentStep < 2) { next.textContent = 'Next'; next.classList.remove('complete-btn'); return; }
+            if (currentStep < 1) { next.textContent = 'Next'; next.classList.remove('complete-btn'); return; }
             const ex = workoutData.exercises[currentExerciseIndex];
             const lastSet = currentSetIndex === ex.maxSets - 1;
             // On last set: button says "Next Exercise" (goes to picker), not "Complete Workout"
@@ -708,13 +670,12 @@
         // === Complete ===
         async function completeWorkout() {
             showLoading(); await saveCurrentSetToSheet(); stopRestTimer(); hideLoading();
-            let summary = `Day ${currentDay} - ${workoutData.type} Complete! 🎉\n\n`;
+            let summary = `Week ${currentWeek} • Day ${currentDay} Complete! 🎉\n\n`;
             workoutData.exercises.forEach((ex, i) => {
                 summary += `${ex.name}:\n`;
                 if (workoutLog[i]) workoutLog[i].forEach((s, j) => {
                     if (s && (s.weight || s.reps || s.rpe)) {
-                        if (ex.name.toLowerCase().includes('stairmaster')) summary += `  Seg ${j+1}: ${s.reps} min @ level ${s.rpe}\n`;
-                        else summary += `  Set ${j+1}: ${s.weight} × ${s.reps} reps @ RPE ${s.rpe}\n`;
+                        summary += `  Set ${j+1}: ${s.weight} × ${s.reps} reps @ RPE ${s.rpe}\n`;
                     }
                 });
                 summary += '\n';
