@@ -237,6 +237,34 @@
             background: #10b981; color: white; transition: all 0.2s;
         }
         .picker-complete-btn:active { transform: scale(0.98); background: #059669; }
+
+        /* RPE Reference (collapsible at bottom of workout pages) */
+        .rpe-reference {
+            margin: 25px 20px 20px 20px; border: 1px solid #e0e0e0; border-radius: 10px;
+            background: white; overflow: hidden;
+        }
+        .rpe-toggle {
+            width: 100%; padding: 14px 16px; border: none; background: #f8f9fa;
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 14px; font-weight: 600; color: #555; cursor: pointer;
+            text-align: left;
+        }
+        .rpe-toggle:active { background: #eef1ff; }
+        .rpe-toggle-arrow { font-size: 12px; color: #888; transition: transform 0.2s ease; }
+        .rpe-reference.expanded .rpe-toggle-arrow { transform: rotate(180deg); }
+        .rpe-content {
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+        }
+        .rpe-reference.expanded .rpe-content { max-height: 600px; }
+        .rpe-row {
+            display: flex; align-items: flex-start; gap: 12px; padding: 10px 16px;
+            border-top: 1px solid #f0f0f0; font-size: 14px;
+        }
+        .rpe-num {
+            flex-shrink: 0; min-width: 38px; font-weight: 700; color: #667eea;
+            font-variant-numeric: tabular-nums;
+        }
+        .rpe-desc { color: #555; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -281,6 +309,25 @@
             <div id="previewSection" class="section hidden"></div>
             <div id="pickerSection" class="section hidden"></div>
             <div id="exerciseSection" class="section hidden"></div>
+
+            <div id="rpeReference" class="rpe-reference">
+                <button class="rpe-toggle" type="button" onclick="toggleRpeReference()" aria-expanded="false">
+                    <span>📊 RPE Scale Reference</span>
+                    <span class="rpe-toggle-arrow">▼</span>
+                </button>
+                <div class="rpe-content">
+                    <div class="rpe-row"><span class="rpe-num">10</span><span class="rpe-desc">Maximal effort, could not lift more weight or go longer</span></div>
+                    <div class="rpe-row"><span class="rpe-num">9.5</span><span class="rpe-desc">Near-max effort, maybe could add a little more weight</span></div>
+                    <div class="rpe-row"><span class="rpe-num">9</span><span class="rpe-desc">Very hard, straining, slow bar speed, but not max</span></div>
+                    <div class="rpe-row"><span class="rpe-num">8.5</span><span class="rpe-desc">Hard, challenging, form holding but slower movement</span></div>
+                    <div class="rpe-row"><span class="rpe-num">8</span><span class="rpe-desc">Moderately hard, work is real, but not a grind</span></div>
+                    <div class="rpe-row"><span class="rpe-num">7.5</span><span class="rpe-desc">Somewhat hard, moderate effort, but still comfortable</span></div>
+                    <div class="rpe-row"><span class="rpe-num">7</span><span class="rpe-desc">Moderate, steady effort, breathing increased</span></div>
+                    <div class="rpe-row"><span class="rpe-num">6</span><span class="rpe-desc">Light to moderate, could keep going for a while</span></div>
+                    <div class="rpe-row"><span class="rpe-num">5</span><span class="rpe-desc">Light, easy, could talk and keep moving</span></div>
+                </div>
+            </div>
+
             <div class="navigation">
                 <button class="nav-btn nav-btn-prev" onclick="previousStep()" id="prevBtn">Previous</button>
                 <button class="nav-btn nav-btn-next" onclick="nextStep()" id="nextBtn">Next</button>
@@ -289,7 +336,7 @@
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyJmBl_oSBLea7JZCs4Nl0sw3So9zZIkDv9bwLx6ioRkHjtb-D-3LxUC6E1vDzDxa0m/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwtxXz8agZO1Sp3if4Aub1CImIDl14RjpFug3vM2yzN0tckDxeuWDUAKVul7jJ9rZI/exec';
 
         let currentDay = 1, currentWeek = 1, workoutData = null;
         let currentStep = 0; // 0=preview, 1+=picker/exercises
@@ -388,6 +435,13 @@
         }
         function showLoading() { document.getElementById('loadingScreen').classList.remove('hidden'); }
         function hideLoading() { document.getElementById('loadingScreen').classList.add('hidden'); }
+
+        // === RPE reference toggle ===
+        function toggleRpeReference() {
+            const ref = document.getElementById('rpeReference');
+            const expanded = ref.classList.toggle('expanded');
+            ref.querySelector('.rpe-toggle').setAttribute('aria-expanded', expanded);
+        }
 
         // === Video toggle ===
         function toggleVideo(id) {
