@@ -3,217 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0c0d11">
     <title>Workout Tracker</title>
     <style>
+        :root {
+            --bg: #0c0d11;
+            --surface: #14161c;
+            --card: #1a1d25;
+            --inset: #10121a;
+            --border: #262a35;
+            --border-soft: #20242f;
+            --text: #e7e9ee;
+            --dim: #9aa1b2;
+            --faint: #646b7d;
+            --accent: #667eea;
+            --accent-text: #aeb6ff;
+            --accent-dim: #4d56b8;
+            --accent-press: #5560d8;
+            --success: #2fc98e;
+            --success-bg: #11271f;
+            --amber: #e8a13c;
+            --amber-bg: #251c0e;
+            --amber-text: #cfc4ae;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { color-scheme: dark; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f5f5;
+            background: var(--bg);
+            color: var(--text);
             padding: 0; margin: 0;
             -webkit-font-smoothing: antialiased;
         }
 
-        .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; padding-bottom: 80px; }
+        .container { max-width: 600px; margin: 0 auto; background: var(--surface); min-height: 100vh; padding-bottom: 80px; border-left: 1px solid var(--border-soft); border-right: 1px solid var(--border-soft); }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 20px; position: sticky; top: 0; z-index: 100;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: #101219;
+            color: var(--text); padding: 16px 20px 14px; position: sticky; top: 0; z-index: 100;
+            border-bottom: 1px solid var(--border);
         }
-        .header h1 { font-size: 24px; margin-bottom: 5px; }
-        .header .workout-info { font-size: 14px; opacity: 0.9; }
+        .header h1 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: var(--faint); margin-bottom: 4px; }
+        .header .workout-info { font-size: 19px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 
         .loading {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.95); display: flex; flex-direction: column;
+            background: rgba(12,13,17,0.95); display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 2000;
         }
         .loading-spinner {
-            width: 50px; height: 50px; border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite;
+            width: 50px; height: 50px; border: 4px solid var(--border);
+            border-top: 4px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loading-text { margin-top: 20px; color: #667eea; font-weight: 600; }
+        .loading-text { margin-top: 20px; color: var(--accent-text); font-weight: 600; }
 
         .confirmation-modal {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5); display: flex; align-items: center;
+            background: rgba(0,0,0,0.6); display: flex; align-items: center;
             justify-content: center; z-index: 1000; padding: 20px;
         }
-        .modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 400px; width: 100%; }
-        .modal-content h2 { margin-bottom: 15px; color: #333; }
+        .modal-content { background: var(--card); border: 1px solid var(--border); padding: 30px; border-radius: 12px; max-width: 400px; width: 100%; }
+        .modal-content h2 { margin-bottom: 15px; color: var(--text); }
 
         .btn {
             flex: 1; padding: 12px; border: none; border-radius: 8px;
             font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;
         }
-        .btn-primary { background: #667eea; color: white; }
-        .btn-primary:active { transform: scale(0.98); background: #5568d3; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:active { transform: scale(0.98); background: var(--accent-press); }
 
         .section { padding: 20px; }
         .section-title {
-            font-size: 18px; font-weight: 700; color: #333; margin-bottom: 15px;
+            font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 15px;
             display: flex; align-items: center; gap: 8px;
         }
 
         .warmup-item {
-            background: #f8f9fa; padding: 12px 15px; border-radius: 8px;
-            margin-bottom: 10px; border-left: 3px solid #667eea;
+            background: var(--card); padding: 12px 15px; border-radius: 8px;
+            margin-bottom: 10px; border-left: 3px solid var(--accent-dim);
         }
         .warmup-item .name {
-            font-weight: 600; color: #333; margin-bottom: 4px;
+            font-weight: 600; color: var(--text); margin-bottom: 4px;
             display: flex; align-items: center; gap: 8px; justify-content: space-between;
         }
         .warmup-item .name-text { flex: 1; }
-        .warmup-item .details { font-size: 14px; color: #666; margin-top: 4px; }
+        .warmup-item .details { font-size: 14px; color: var(--dim); margin-top: 4px; }
 
         .video-toggle {
-            background: #667eea; color: white; border: none; padding: 6px 12px;
+            background: var(--accent); color: #fff; border: none; padding: 6px 12px;
             border-radius: 5px; font-size: 11px; cursor: pointer; font-weight: 600;
             white-space: nowrap; display: flex; align-items: center; gap: 4px;
         }
         .video-toggle:active { transform: scale(0.95); }
 
         .video-link {
-            background: #667eea; color: white; border: none; padding: 10px 20px;
+            background: var(--accent); color: #fff; border: none; padding: 10px 20px;
             border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 600;
             text-decoration: none; display: inline-block; text-align: center; margin-top: 12px;
         }
-        .video-link:active { transform: scale(0.98); background: #5568d3; }
+        .video-link:active { transform: scale(0.98); background: var(--accent-press); }
 
         .video-container {
             margin-top: 12px; border-radius: 8px; overflow: hidden; display: none;
-            background: #f0f0f0; padding: 15px; text-align: center;
+            background: var(--inset); padding: 15px; text-align: center;
         }
         .video-container.show { display: block; animation: slideDown 0.3s ease; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .video-error { color: #666; font-size: 13px; margin-bottom: 10px; }
+        .video-error { color: var(--dim); font-size: 13px; margin-bottom: 10px; }
 
         /* Workout Preview */
         .preview-item {
-            background: #f8f9fa; padding: 14px 15px; border-radius: 8px;
-            margin-bottom: 10px; border-left: 3px solid #667eea;
+            background: var(--card); padding: 14px 15px; border-radius: 8px;
+            margin-bottom: 10px; border-left: 3px solid var(--accent-dim);
             display: flex; align-items: center; justify-content: space-between; gap: 10px;
         }
         .preview-item-info { flex: 1; }
-        .preview-item-name { font-weight: 600; color: #333; font-size: 15px; }
-        .preview-item-detail { font-size: 13px; color: #888; margin-top: 3px; }
+        .preview-item-name { font-weight: 600; color: var(--text); font-size: 15px; }
+        .preview-item-detail { font-size: 13px; color: var(--faint); margin-top: 3px; font-variant-numeric: tabular-nums; }
         .preview-video-btn {
-            background: #667eea; color: white; border: none; padding: 6px 12px;
+            background: var(--accent); color: #fff; border: none; padding: 6px 12px;
             border-radius: 5px; font-size: 11px; font-weight: 600; text-decoration: none; white-space: nowrap;
         }
-        .preview-video-btn:active { transform: scale(0.95); background: #5568d3; }
+        .preview-video-btn:active { transform: scale(0.95); background: var(--accent-press); }
 
         /* Rest Timer */
         .rest-timer {
             display: flex; align-items: center; justify-content: center; gap: 8px;
             padding: 10px 15px; margin-bottom: 15px; border-radius: 8px;
-            background: #f0f0f0; color: #666; font-weight: 600; font-size: 15px;
+            background: var(--inset); color: var(--dim); font-weight: 600; font-size: 15px;
+            font-variant-numeric: tabular-nums;
             transition: background 0.5s ease, color 0.5s ease;
         }
-        .rest-timer.ready { background: #d1fae5; color: #059669; }
+        .rest-timer.ready { background: var(--success-bg); color: var(--success); }
         .rest-timer-icon { font-size: 18px; }
 
         /* Exercise Card */
         .exercise-card {
-            background: white; border: 1px solid #e0e0e0; border-radius: 12px;
-            padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; margin-bottom: 20px;
         }
         .exercise-header { margin-bottom: 15px; }
         .exercise-title {
-            font-size: 20px; font-weight: 700; color: #333; margin-bottom: 8px;
+            font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px;
             display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
         }
         .exercise-title .title-text { flex: 1; }
         .exercise-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-        .meta-tag { background: #f0f0f0; padding: 6px 12px; border-radius: 6px; font-size: 13px; color: #555; }
+        .meta-tag { background: #232734; padding: 6px 12px; border-radius: 6px; font-size: 13px; color: #c3c8d6; font-variant-numeric: tabular-nums; }
         .notes {
-            background: #fffbea; border-left: 3px solid #f59e0b; padding: 10px;
-            border-radius: 6px; font-size: 14px; color: #666; margin-top: 10px; font-style: italic;
+            background: var(--amber-bg); border-left: 3px solid var(--amber); padding: 10px;
+            border-radius: 6px; font-size: 14px; color: var(--amber-text); margin-top: 10px; font-style: italic;
         }
 
-        .last-workout { background: #f0f4ff; padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .last-workout { background: #181b29; border: 1px solid #232840; padding: 15px; border-radius: 8px; margin: 15px 0; }
         .last-workout-title {
-            font-size: 13px; font-weight: 600; color: #667eea; margin-bottom: 12px;
+            font-size: 13px; font-weight: 600; color: var(--accent-text); margin-bottom: 12px;
             text-transform: uppercase; letter-spacing: 0.5px;
         }
         .previous-sets { display: flex; flex-direction: column; gap: 8px; }
-        .previous-set { font-size: 14px; color: #555; padding: 8px; background: white; border-radius: 6px; }
+        .previous-set { font-size: 14px; color: #c3c8d6; padding: 8px; background: var(--inset); border-radius: 6px; font-variant-numeric: tabular-nums; }
 
         .sets-container { margin-top: 15px; }
         .set-navigation {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;
+            margin-bottom: 15px; padding: 10px; background: var(--inset); border-radius: 8px;
         }
         .set-nav-btn {
-            background: #667eea; color: white; border: none; padding: 8px 16px;
+            background: var(--accent); color: #fff; border: none; padding: 8px 16px;
             border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
         }
-        .set-nav-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .set-nav-btn:disabled { background: #2a2e3a; color: var(--faint); cursor: not-allowed; }
         .set-nav-btn:active:not(:disabled) { transform: scale(0.98); }
-        .set-indicator { font-weight: 700; color: #667eea; font-size: 16px; }
+        .set-indicator { font-weight: 700; color: var(--accent-text); font-size: 16px; font-variant-numeric: tabular-nums; }
 
-        .set-input-card { background: #fafafa; padding: 20px; border-radius: 10px; border: 2px solid #667eea; }
+        .set-input-card { background: #161925; padding: 20px; border-radius: 10px; border: 2px solid var(--accent); }
         .input-group { margin-bottom: 15px; }
         .input-group:last-child { margin-bottom: 0; }
         .input-group label {
-            display: block; font-size: 13px; font-weight: 600; color: #555;
+            display: block; font-size: 13px; font-weight: 600; color: var(--dim);
             margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
         }
         .input-group input {
-            width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px;
-            font-size: 18px; text-align: center; background: white; font-weight: 600;
+            width: 100%; padding: 15px; border: 1px solid #2e3344; border-radius: 8px;
+            font-size: 18px; text-align: center; background: var(--inset); color: var(--text); font-weight: 600;
+            font-variant-numeric: tabular-nums;
         }
+        .input-group input::placeholder { color: #4b5163; }
         .input-group input:focus {
-            outline: none; border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.22);
         }
 
         .navigation {
-            position: fixed; bottom: 0; left: 0; right: 0; background: white;
-            padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
+            padding: 15px; border-top: 1px solid var(--border);
             display: flex; gap: 10px; max-width: 600px; margin: 0 auto;
         }
         .nav-btn {
             flex: 1; padding: 15px; border: none; border-radius: 10px;
             font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;
         }
-        .nav-btn-prev { background: #e0e0e0; color: #333; }
-        .nav-btn-next { background: #667eea; color: white; }
-        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .nav-btn-prev { background: #232734; color: #c3c8d6; }
+        .nav-btn-next { background: var(--accent); color: #fff; }
+        .nav-btn:disabled { opacity: 0.45; cursor: not-allowed; }
         .nav-btn:active:not(:disabled) { transform: scale(0.98); }
 
-        .progress-bar { height: 4px; background: #e0e0e0; position: relative; margin-top: 10px; }
-        .progress-fill { height: 100%; background: white; transition: width 0.3s ease; }
+        .progress-bar { height: 4px; background: var(--border); position: relative; margin-top: 10px; border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; }
 
         .hidden { display: none; }
-        .complete-btn { background: #10b981 !important; }
-        .complete-btn:active { background: #059669 !important; }
+        .complete-btn { background: #119d70 !important; }
+        .complete-btn:active { background: #0d7d59 !important; }
 
         .set-dots { display: flex; gap: 8px; justify-content: center; margin-top: 15px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
-        .dot.active { background: #667eea; }
-        .dot.filled { background: #10b981; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #2e3344; }
+        .dot.active { background: var(--accent); }
+        .dot.filled { background: var(--success); }
 
-        .error-message { background: #fee; border-left: 4px solid #f00; padding: 15px; margin: 20px; border-radius: 8px; color: #c00; }
+        .error-message { background: #2a1416; border-left: 4px solid #e5484d; padding: 15px; margin: 20px; border-radius: 8px; color: #ff9296; }
         .warmup-section-divider { margin: 25px 0 15px 0; }
 
         .previous-note {
-            margin-top: 10px; padding: 10px; background: #fff8e1;
-            border-left: 3px solid #f59e0b; border-radius: 6px;
-            font-size: 13px; color: #666; font-style: italic;
+            margin-top: 10px; padding: 10px; background: var(--amber-bg);
+            border-left: 3px solid var(--amber); border-radius: 6px;
+            font-size: 13px; color: var(--amber-text); font-style: italic;
         }
         .note-input-section { margin-top: 15px; }
         .note-label {
-            display: block; font-size: 13px; font-weight: 600; color: #555;
+            display: block; font-size: 13px; font-weight: 600; color: var(--dim);
             margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
         }
         .note-textarea {
-            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;
-            font-size: 14px; font-family: inherit; resize: vertical; min-height: 60px; background: white;
+            width: 100%; padding: 12px; border: 1px solid #2e3344; border-radius: 8px;
+            font-size: 14px; font-family: inherit; resize: vertical; min-height: 60px;
+            background: var(--inset); color: var(--text);
         }
-        .note-textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .note-textarea::placeholder { color: #4b5163; }
+        .note-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.22); }
 
         /* Exercise Picker */
         .picker-item {
@@ -222,35 +252,35 @@
             cursor: pointer; transition: all 0.15s; border: 2px solid transparent;
         }
         .picker-item.incomplete {
-            background: #f8f9fa; border-left: 3px solid #667eea;
+            background: var(--card); border-left: 3px solid var(--accent-dim);
         }
-        .picker-item.incomplete:active { transform: scale(0.98); background: #eef1ff; }
+        .picker-item.incomplete:active { transform: scale(0.98); background: #20243a; }
         .picker-item.completed {
-            background: #f0fdf4; border-left: 3px solid #10b981; opacity: 0.7;
+            background: var(--success-bg); border-left: 3px solid var(--success); opacity: 0.7;
         }
-        .picker-item-name { font-weight: 600; color: #333; font-size: 15px; }
-        .picker-item-detail { font-size: 13px; color: #888; margin-top: 3px; }
+        .picker-item-name { font-weight: 600; color: var(--text); font-size: 15px; }
+        .picker-item-detail { font-size: 13px; color: var(--faint); margin-top: 3px; font-variant-numeric: tabular-nums; }
         .picker-item-status { font-size: 20px; flex-shrink: 0; }
         .picker-complete-btn {
             width: 100%; padding: 16px; border: none; border-radius: 10px;
             font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 15px;
-            background: #10b981; color: white; transition: all 0.2s;
+            background: #119d70; color: #fff; transition: all 0.2s;
         }
-        .picker-complete-btn:active { transform: scale(0.98); background: #059669; }
+        .picker-complete-btn:active { transform: scale(0.98); background: #0d7d59; }
 
         /* RPE Reference (collapsible at bottom of workout pages) */
         .rpe-reference {
-            margin: 25px 20px 20px 20px; border: 1px solid #e0e0e0; border-radius: 10px;
-            background: white; overflow: hidden;
+            margin: 25px 20px 20px 20px; border: 1px solid var(--border); border-radius: 10px;
+            background: var(--card); overflow: hidden;
         }
         .rpe-toggle {
-            width: 100%; padding: 14px 16px; border: none; background: #f8f9fa;
+            width: 100%; padding: 14px 16px; border: none; background: var(--inset);
             display: flex; align-items: center; justify-content: space-between;
-            font-size: 14px; font-weight: 600; color: #555; cursor: pointer;
+            font-size: 14px; font-weight: 600; color: var(--dim); cursor: pointer;
             text-align: left;
         }
-        .rpe-toggle:active { background: #eef1ff; }
-        .rpe-toggle-arrow { font-size: 12px; color: #888; transition: transform 0.2s ease; }
+        .rpe-toggle:active { background: #20243a; }
+        .rpe-toggle-arrow { font-size: 12px; color: var(--faint); transition: transform 0.2s ease; }
         .rpe-reference.expanded .rpe-toggle-arrow { transform: rotate(180deg); }
         .rpe-content {
             max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
@@ -258,13 +288,13 @@
         .rpe-reference.expanded .rpe-content { max-height: 600px; }
         .rpe-row {
             display: flex; align-items: flex-start; gap: 12px; padding: 10px 16px;
-            border-top: 1px solid #f0f0f0; font-size: 14px;
+            border-top: 1px solid var(--border-soft); font-size: 14px;
         }
         .rpe-num {
-            flex-shrink: 0; min-width: 38px; font-weight: 700; color: #667eea;
+            flex-shrink: 0; min-width: 38px; font-weight: 700; color: var(--accent-text);
             font-variant-numeric: tabular-nums;
         }
-        .rpe-desc { color: #555; line-height: 1.4; }
+        .rpe-desc { color: #c3c8d6; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -277,22 +307,22 @@
         <div id="confirmationModal" class="confirmation-modal hidden">
             <div class="modal-content">
                 <h2>Start Workout</h2>
-                <div id="statusMessage" style="margin-bottom:15px; color:#666; line-height:1.5;"></div>
+                <div id="statusMessage" style="margin-bottom:15px; color:#9aa1b2; line-height:1.5;"></div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display:block; font-size:13px; font-weight:600; color:#555; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Week</label>
-                    <select id="weekSelect" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; font-weight:600; background:white;">
+                    <label style="display:block; font-size:13px; font-weight:600; color:#9aa1b2; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Week</label>
+                    <select id="weekSelect" style="width:100%; padding:12px; border:1px solid #262a35; border-radius:8px; font-size:16px; font-weight:600; background:#10121a; color:#e7e9ee;">
                         <option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option>
                         <option value="5">Week 5</option><option value="6">Week 6</option><option value="7">Week 7</option><option value="8">Week 8</option>
                         <option value="9">Week 9</option><option value="10">Week 10</option><option value="11">Week 11</option><option value="12">Week 12</option>
                     </select>
                 </div>
                 <div style="margin-bottom: 20px;">
-                    <label style="display:block; font-size:13px; font-weight:600; color:#555; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Day</label>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#9aa1b2; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Day</label>
                     <div id="dayButtons" style="display:flex; gap:10px;">
-                        <button class="day-select-btn" onclick="selectDay(1)" data-day="1" style="flex:1; padding:12px; border:2px solid #667eea; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:white; color:#667eea;">Day 1</button>
-                        <button class="day-select-btn" onclick="selectDay(2)" data-day="2" style="flex:1; padding:12px; border:2px solid #667eea; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:white; color:#667eea;">Day 2</button>
-                        <button class="day-select-btn" onclick="selectDay(3)" data-day="3" style="flex:1; padding:12px; border:2px solid #667eea; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:white; color:#667eea;">Day 3</button>
-                        <button class="day-select-btn" onclick="selectDay(4)" data-day="4" style="flex:1; padding:12px; border:2px solid #667eea; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:white; color:#667eea;">Day 4</button>
+                        <button class="day-select-btn" onclick="selectDay(1)" data-day="1" style="flex:1; padding:12px; border:1.5px solid #343a4c; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#aeb6ff;">Day 1</button>
+                        <button class="day-select-btn" onclick="selectDay(2)" data-day="2" style="flex:1; padding:12px; border:1.5px solid #343a4c; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#aeb6ff;">Day 2</button>
+                        <button class="day-select-btn" onclick="selectDay(3)" data-day="3" style="flex:1; padding:12px; border:1.5px solid #343a4c; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#aeb6ff;">Day 3</button>
+                        <button class="day-select-btn" onclick="selectDay(4)" data-day="4" style="flex:1; padding:12px; border:1.5px solid #343a4c; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#aeb6ff;">Day 4</button>
                     </div>
                 </div>
                 <div><button class="btn btn-primary" onclick="confirmWorkout()" style="width:100%;">Start Workout</button></div>
@@ -399,8 +429,8 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzJEakQyzt_a0f5fSOHvvcA
             currentDay = day;
             document.querySelectorAll('.day-select-btn').forEach(b => {
                 const d = parseInt(b.getAttribute('data-day'));
-                b.style.background = d === day ? '#667eea' : 'white';
-                b.style.color = d === day ? 'white' : '#667eea';
+                b.style.background = d === day ? '#5b66e3' : 'transparent';
+                b.style.color = d === day ? '#ffffff' : '#aeb6ff';
             });
         }
         function updateDayButtons() {
