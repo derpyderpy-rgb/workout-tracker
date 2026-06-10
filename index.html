@@ -16,10 +16,10 @@
             --text: #e7e9ee;
             --dim: #9aa1b2;
             --faint: #646b7d;
-            --accent: #667eea;
-            --accent-text: #aeb6ff;
-            --accent-dim: #4d56b8;
-            --accent-press: #5560d8;
+            --accent: #e06a3c;
+            --accent-text: #ffb38f;
+            --accent-dim: #8a4a2e;
+            --accent-press: #c2532a;
             --success: #2fc98e;
             --success-bg: #11271f;
             --amber: #e8a13c;
@@ -159,7 +159,7 @@
             border-radius: 6px; font-size: 14px; color: var(--amber-text); margin-top: 10px; font-style: italic;
         }
 
-        .last-workout { background: #181b29; border: 1px solid #232840; padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .last-workout { background: #221a15; border: 1px solid #38291f; padding: 15px; border-radius: 8px; margin: 15px 0; }
         .last-workout-title {
             font-size: 13px; font-weight: 600; color: var(--accent-text); margin-bottom: 12px;
             text-transform: uppercase; letter-spacing: 0.5px;
@@ -180,7 +180,7 @@
         .set-nav-btn:active:not(:disabled) { transform: scale(0.98); }
         .set-indicator { font-weight: 700; color: var(--accent-text); font-size: 16px; font-variant-numeric: tabular-nums; }
 
-        .set-input-card { background: #161925; padding: 20px; border-radius: 10px; border: 2px solid var(--accent); }
+        .set-input-card { background: #1e1712; padding: 20px; border-radius: 10px; border: 2px solid var(--accent); }
         .input-group { margin-bottom: 15px; }
         .input-group:last-child { margin-bottom: 0; }
         .input-group label {
@@ -195,7 +195,7 @@
         .input-group input::placeholder { color: #4b5163; }
         .input-group input:focus {
             outline: none; border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.22);
+            box-shadow: 0 0 0 3px rgba(224, 106, 60, 0.25);
         }
 
         .navigation {
@@ -243,7 +243,7 @@
             background: var(--inset); color: var(--text);
         }
         .note-textarea::placeholder { color: #4b5163; }
-        .note-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.22); }
+        .note-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(224, 106, 60, 0.25); }
 
         /* Exercise Picker */
         .picker-item {
@@ -254,7 +254,7 @@
         .picker-item.incomplete {
             background: var(--card); border-left: 3px solid var(--accent-dim);
         }
-        .picker-item.incomplete:active { transform: scale(0.98); background: #20243a; }
+        .picker-item.incomplete:active { transform: scale(0.98); background: #2c211a; }
         .picker-item.completed {
             background: var(--success-bg); border-left: 3px solid var(--success); opacity: 0.7;
         }
@@ -279,7 +279,7 @@
             font-size: 14px; font-weight: 600; color: var(--dim); cursor: pointer;
             text-align: left;
         }
-        .rpe-toggle:active { background: #20243a; }
+        .rpe-toggle:active { background: #2c211a; }
         .rpe-toggle-arrow { font-size: 12px; color: var(--faint); transition: transform 0.2s ease; }
         .rpe-reference.expanded .rpe-toggle-arrow { transform: rotate(180deg); }
         .rpe-content {
@@ -319,10 +319,10 @@
                 <div style="margin-bottom: 20px;">
                     <label style="display:block; font-size:13px; font-weight:600; color:#9aa1b2; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Day</label>
                     <div id="dayButtons" style="display:flex; gap:10px;">
-                        <button class="day-select-btn" onclick="selectDay(1)" data-day="1" style="flex:1; padding:12px; border:1.5px solid #343a4c; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#aeb6ff;">Day 1</button>
-                        <button class="day-select-btn" onclick="selectDay(2)" data-day="2" style="flex:1; padding:12px; border:1.5px solid #343a4c; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#aeb6ff;">Day 2</button>
-                        <button class="day-select-btn" onclick="selectDay(3)" data-day="3" style="flex:1; padding:12px; border:1.5px solid #343a4c; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#aeb6ff;">Day 3</button>
-                        <button class="day-select-btn" onclick="selectDay(4)" data-day="4" style="flex:1; padding:12px; border:1.5px solid #343a4c; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#aeb6ff;">Day 4</button>
+                        <button class="day-select-btn" onclick="selectDay(1)" data-day="1" style="flex:1; padding:12px; border:1.5px solid #3e3329; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#ffb38f;">Day 1</button>
+                        <button class="day-select-btn" onclick="selectDay(2)" data-day="2" style="flex:1; padding:12px; border:1.5px solid #3e3329; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#ffb38f;">Day 2</button>
+                        <button class="day-select-btn" onclick="selectDay(3)" data-day="3" style="flex:1; padding:12px; border:1.5px solid #3e3329; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#ffb38f;">Day 3</button>
+                        <button class="day-select-btn" onclick="selectDay(4)" data-day="4" style="flex:1; padding:12px; border:1.5px solid #3e3329; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; background:transparent; color:#ffb38f;">Day 4</button>
                     </div>
                 </div>
                 <div><button class="btn btn-primary" onclick="confirmWorkout()" style="width:100%;">Start Workout</button></div>
@@ -429,8 +429,8 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzJEakQyzt_a0f5fSOHvvcA
             currentDay = day;
             document.querySelectorAll('.day-select-btn').forEach(b => {
                 const d = parseInt(b.getAttribute('data-day'));
-                b.style.background = d === day ? '#5b66e3' : 'transparent';
-                b.style.color = d === day ? '#ffffff' : '#aeb6ff';
+                b.style.background = d === day ? '#d96437' : 'transparent';
+                b.style.color = d === day ? '#ffffff' : '#ffb38f';
             });
         }
         function updateDayButtons() {
