@@ -39,7 +39,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        .container { max-width: 600px; margin: 0 auto; background: var(--surface); min-height: 100vh; padding-bottom: 80px; border-left: 1px solid var(--border-soft); border-right: 1px solid var(--border-soft); }
+        .container { max-width: 600px; margin: 0 auto; background: var(--surface); min-height: 100vh; padding-bottom: 110px; border-left: 1px solid var(--border-soft); border-right: 1px solid var(--border-soft); }
 
         .header {
             background: #101219;
@@ -203,6 +203,9 @@
             padding: 15px; border-top: 1px solid var(--border);
             display: flex; gap: 10px; max-width: 600px; margin: 0 auto;
         }
+        /* Hide the bottom bar while typing: iOS moves fixed bars up with the keyboard,
+           so the bar ends up covering the field being edited. */
+        body.keyboard-open .navigation { display: none; }
         .nav-btn {
             flex: 1; padding: 15px; border: none; border-radius: 10px;
             font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;
@@ -766,6 +769,18 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzJEakQyzt_a0f5fSOHvvcA
             alert(summary + '\nAll data saved to Google Sheets! 💪');
             location.reload();
         }
+
+        // Track whether a text field is focused (i.e. the on-screen keyboard is up).
+        const isField = el => el && el.matches && el.matches('input, textarea, select');
+        document.addEventListener('focusin', e => {
+            if (isField(e.target)) document.body.classList.add('keyboard-open');
+        });
+        document.addEventListener('focusout', () => {
+            // Short delay so moving Weight -> Reps doesn't flash the bar back in.
+            setTimeout(() => {
+                if (!isField(document.activeElement)) document.body.classList.remove('keyboard-open');
+            }, 100);
+        });
 
         initializeApp();
     </script>
